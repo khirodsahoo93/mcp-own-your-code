@@ -1,11 +1,27 @@
 [project]
 name = "own-your-code"
-version = "0.1.6"
-description = "Own Your Code — MCP server + UI: record why each function exists, tradeoffs, and evolution (SQLite)"
+version = "0.1.7"
+description = "MCP server & web UI: intent ledger for your codebase — record why each function exists (Cursor, Claude, SQLite, FastAPI)."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
-keywords = ["mcp", "intent", "sqlite", "codebase", "documentation"]
+keywords = [
+    "mcp",
+    "model-context-protocol",
+    "intent",
+    "code-intent",
+    "codebase",
+    "documentation",
+    "cursor",
+    "claude",
+    "windsurf",
+    "ai-agents",
+    "sqlite",
+    "fastapi",
+    "developer-tools",
+    "embeddings",
+    "semantic-search",
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -14,6 +30,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Documentation",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
@@ -50,7 +67,12 @@ dev = [
 ]
 
 [project.urls]
+Homepage = "https://github.com/khirodsahoo93/mcp-own-your-code"
+Documentation = "https://github.com/khirodsahoo93/mcp-own-your-code/blob/main/docs/USER-GUIDE.md"
 Repository = "https://github.com/khirodsahoo93/mcp-own-your-code"
+Changelog = "https://github.com/khirodsahoo93/mcp-own-your-code/releases"
+"Bug Tracker" = "https://github.com/khirodsahoo93/mcp-own-your-code/issues"
+PyPI = "https://pypi.org/project/own-your-code/"
 
 [build-system]
 requires = ["hatchling"]

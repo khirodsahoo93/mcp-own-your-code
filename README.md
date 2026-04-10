@@ -12,6 +12,33 @@
   <a href="https://github.com/khirodsahoo93/mcp-own-your-code"><img src="https://img.shields.io/badge/source-GitHub-181717?logo=github" alt="GitHub" /></a>
 </p>
 
+**Own Your Code** is an open-source **[Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server** and optional **FastAPI + React** web app. It maintains an **intent ledger** (SQLite): for each function, capture *why* it exists, tradeoffs, decisions, and evolution—ideal for **AI-assisted development** in **Cursor**, **Claude Desktop**, **Windsurf**, **VS Code** (with MCP), and any other MCP host. **Package name:** `own-your-code` on **PyPI**; **repository:** [`mcp-own-your-code`](https://github.com/khirodsahoo93/mcp-own-your-code).
+
+---
+
+## Find Own Your Code
+
+| Where | Install or URL |
+|--------|----------------|
+| **PyPI** | [`pip install own-your-code`](https://pypi.org/project/own-your-code/) — [`pypi.org/project/own-your-code`](https://pypi.org/project/own-your-code/) |
+| **GitHub** | Source & issues: [`github.com/khirodsahoo93/mcp-own-your-code`](https://github.com/khirodsahoo93/mcp-own-your-code) |
+| **npm** (optional shim) | [`npx own-your-code-mcp install`](https://www.npmjs.com/package/own-your-code-mcp) — [`npmjs.com/package/own-your-code-mcp`](https://www.npmjs.com/package/own-your-code-mcp) |
+
+**Typical searches:** *own-your-code*, *own your code MCP*, *MCP intent ledger*, *codebase intent documentation*, *record why function exists*, *MCP server SQLite documentation*.
+
+### MCP directories & registries (discovery)
+
+Listing the project in public MCP catalogs helps people (and search engines) connect **“intent / codebase documentation MCP”** to this repo. Maintainer checklist—submit or claim when ready:
+
+| Resource | Action |
+|----------|--------|
+| [Model Context Protocol](https://modelcontextprotocol.io/) | Official protocol site; see [registry / publishing](https://github.com/modelcontextprotocol/registry) and `mcp-publisher` for the official server registry. |
+| [MCP.Directory — submit](https://mcp.directory/submit) | Submit GitHub URL + optional PyPI/npm metadata. |
+| [MCP Server Directory](https://mcpserverdirectory.org/) | Community browse + submit flows (see site for current steps). |
+| [MCPCentral — submit server](https://mcpcentral.io/submit-server) | Registry submission via publisher CLI. |
+
+Search ranking depends on many factors (backlinks, relevance, competition). Using the **same names everywhere**—**Own Your Code**, **`own-your-code`**, **MCP intent ledger**—plus PyPI + GitHub + npm + directory listings, gives the strongest *discoverability* baseline you control from the repo.
+
 ---
 
 ### Documentation map
@@ -28,24 +55,25 @@
 
 ### Table of contents
 
-1. [What you get](#what-you-get)
-2. [Architecture (at a glance)](#architecture-at-a-glance)
-3. [Requirements](#requirements)
-4. [Quick start in five steps](#quick-start-in-five-steps)
-5. [Install (all options)](#install-all-options)
-6. [MCP host configuration](#mcp-host-configuration)
-7. [Terminal CLI](#terminal-cli)
-8. [Web UI and API](#web-ui-and-api)
-9. [MCP tools](#mcp-tools)
-10. [REST API](#rest-api)
-11. [Search modes](#search-modes)
-12. [Optional extras (semantic, multi-language)](#optional-extras-semantic-multi-language)
-13. [Post-write hook](#post-write-hook)
-14. [Production deployment](#production-deployment)
-15. [Development](#development)
-16. [Database schema](#database-schema)
-17. [Publishing (maintainers)](#publishing-maintainers)
-18. [License](#license)
+1. [Find Own Your Code](#find-own-your-code)
+2. [What you get](#what-you-get)
+3. [Architecture (at a glance)](#architecture-at-a-glance)
+4. [Requirements](#requirements)
+5. [Quick start in five steps](#quick-start-in-five-steps)
+6. [Install (all options)](#install-all-options)
+7. [MCP host configuration](#mcp-host-configuration)
+8. [Terminal CLI](#terminal-cli)
+9. [Web UI and API](#web-ui-and-api)
+10. [MCP tools](#mcp-tools)
+11. [REST API](#rest-api)
+12. [Search modes](#search-modes)
+13. [Optional extras (semantic, multi-language)](#optional-extras-semantic-multi-language)
+14. [Post-write hook](#post-write-hook)
+15. [Production deployment](#production-deployment)
+16. [Development](#development)
+17. [Database schema](#database-schema)
+18. [Publishing (maintainers)](#publishing-maintainers)
+19. [License](#license)
 
 ---
 
@@ -444,6 +472,7 @@ SQLite tables (version via `PRAGMA user_version`; migrations are additive-safe):
 
 1. **PyPI** — Project `own-your-code` on [pypi.org](https://pypi.org); trusted publisher for this repo + `.github/workflows/release.yml` ([docs](https://docs.pypi.org/trusted-publishers/)).
 2. **npm** — `npm login` or GitHub secret **`NPM_TOKEN`** for `npm/own-your-code-mcp`.
+3. **Discovery** — After a release, submit or update listings in [MCP directories & registries](#mcp-directories--registries-discovery) so metadata stays in sync with the new version.
 
 **Release:** bump `version` in `pyproject.toml` and `npm/own-your-code-mcp/package.json`, then tag:
 

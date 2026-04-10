@@ -2,6 +2,8 @@
 
 This guide is for anyone who is **new to Python packaging, web servers, and MCP**. You do **not** need prior experience with PyPI or FastAPI to follow it.
 
+**Looking for install links, PyPI/npm URLs, or MCP directory listings?** See **[Find Own Your Code](https://github.com/khirodsahoo93/mcp-own-your-code#find-own-your-code)** in the main README.
+
 ---
 
 ## 1. The big picture (one minute)

@@ -1,7 +1,7 @@
 {
   "name": "own-your-code-mcp",
-  "version": "0.1.6",
-  "description": "npm entrypoint for Own Your Code — ensures the Python package is installed and runs the installer or MCP shim",
+  "version": "0.1.7",
+  "description": "Own Your Code MCP server (Model Context Protocol) — npm shim for PyPI package own-your-code; intent ledger & codebase documentation for Cursor, Claude, Windsurf",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -17,10 +17,22 @@
   },
   "keywords": [
     "mcp",
+    "model-context-protocol",
+    "own-your-code",
     "intent",
+    "code-intent",
     "codebase",
-    "own-your-code"
+    "documentation",
+    "cursor",
+    "claude",
+    "sqlite",
+    "fastapi",
+    "developer-tools"
   ],
+  "homepage": "https://github.com/khirodsahoo93/mcp-own-your-code",
+  "bugs": {
+    "url": "https://github.com/khirodsahoo93/mcp-own-your-code/issues"
+  },
   "files": [
     "bin",
     "README.md"
