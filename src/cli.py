@@ -1,8 +1,10 @@
 """
-User-facing CLI: MCP installer (similar UX to code-review-graph).
+User-facing CLI: MCP installer.
 
-  own-your-code install [--platform cursor|claude-desktop|windsurf|all] [--dry-run]
+  own-your-code install [--platform editor-a|editor-b|editor-c|all] [--dry-run]
   own-your-code print-config   # print JSON block to paste manually
+
+Platform IDs map to common MCP config file locations on disk (see README).
 """
 from __future__ import annotations
 
@@ -16,11 +18,13 @@ from pathlib import Path
 SERVER_KEY = "own-your-code"
 
 
-def _cursor_config_paths() -> list[Path]:
+def _paths_editor_a() -> list[Path]:
+    """Host config: ~/.cursor/mcp.json"""
     return [Path.home() / ".cursor" / "mcp.json"]
 
 
-def _claude_desktop_paths() -> list[Path]:
+def _paths_editor_b() -> list[Path]:
+    """Host config: desktop MCP JSON (OS-specific path)."""
     home = Path.home()
     if sys.platform == "darwin":
         return [home / "Library/Application Support/Claude/claude_desktop_config.json"]
@@ -32,14 +36,15 @@ def _claude_desktop_paths() -> list[Path]:
     return [home / ".config" / "Claude" / "claude_desktop_config.json"]
 
 
-def _windsurf_paths() -> list[Path]:
+def _paths_editor_c() -> list[Path]:
+    """Host config: Codeium / Windsurf MCP JSON."""
     return [Path.home() / ".codeium" / "windsurf" / "mcp_config.json"]
 
 
 PLATFORM_PATHS: dict[str, list[Path]] = {
-    "cursor": _cursor_config_paths,
-    "claude-desktop": _claude_desktop_paths,
-    "windsurf": _windsurf_paths,
+    "editor-a": _paths_editor_a,
+    "editor-b": _paths_editor_b,
+    "editor-c": _paths_editor_c,
 }
 
 
@@ -141,13 +146,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    p_install = sub.add_parser("install", help="Merge MCP server config for Cursor / Claude Desktop / Windsurf")
+    p_install = sub.add_parser(
+        "install",
+        help="Merge MCP server config into known host config files (see --platform).",
+    )
     p_install.add_argument(
         "--platform",
         action="append",
         dest="platforms",
         metavar="NAME",
-        help="cursor | claude-desktop | windsurf (repeatable). Default: all for this OS.",
+        help="editor-a | editor-b | editor-c (repeatable). Default: all.",
     )
     p_install.add_argument(
         "--dry-run",

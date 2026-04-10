@@ -2,7 +2,7 @@
 
 **A living intent ledger for your codebase.**
 
-Own Your Code captures the *why* behind every function — user requests, tradeoffs, decisions, and evolution — recorded automatically by your coding agent as it builds. Search by keyword or semantic similarity. Browse in a React UI or query via MCP from any agent.
+Own Your Code captures the *why* behind every function — user requests, tradeoffs, decisions, and evolution — recorded via MCP as you work. Search by keyword or semantic similarity. Browse in a React UI or query the MCP server directly.
 
 ---
 
@@ -18,20 +18,20 @@ You can read `hybrid_search()` in 5 minutes and know what it does. You can't kno
 
 That context lives in someone's head, a Slack thread, or nowhere.
 
-**Own Your Code captures it at the moment it's created — by the agent that wrote the code.**
+**Own Your Code captures it at the moment it's created — while you’re implementing the change.**
 
 ---
 
 ## Features
 
-- **Intent recording** — `record_intent` captures user request, agent reasoning, implementation notes, and confidence. Called automatically by your coding agent.
+- **Intent recording** — `record_intent` captures user request, reasoning, implementation notes, and confidence (typically from your MCP workflow).
 - **Decision log** — tradeoffs, alternatives considered, constraints that forced a choice.
 - **Evolution timeline** — every behavioral change with the reason and triggering request.
 - **Multi-language AST indexing** — Python, TypeScript, JavaScript, Go. Pluggable extractor architecture.
 - **Semantic search** — vector embeddings via `sentence-transformers`. Find `charge_card` by searching "what handles payments?".
 - **Hybrid search** — merges keyword rank + semantic cosine score with tunable weight.
 - **React UI** — Intent Map, Feature clusters, Search tab (keyword/semantic/hybrid), coverage bar, function detail panel.
-- **MCP server** — works with Claude Code, Cursor, Claude Desktop, Copilot, or any MCP-capable agent.
+- **MCP server** — works with any host that supports the Model Context Protocol.
 - **FastAPI REST backend** — full API, suitable for team deployment.
 - **Production-ready** — API key auth, SQLite WAL mode, configurable CORS, background embed jobs, 47 tests.
 
@@ -45,13 +45,13 @@ That context lives in someone's head, a Slack thread, or nowhere.
 
 ```bash
 pipx install own-your-code # recommended — puts own-your-code-mcp on PATH
-own-your-code install               # merges MCP config for Cursor, Claude Desktop, Windsurf
+own-your-code install               # merges MCP config (see platform IDs below)
 ```
 
 ```bash
 python3 -m pip install own-your-code
-own-your-code install --platform cursor
-own-your-code install --platform claude-desktop
+own-your-code install --platform editor-a
+own-your-code install --platform editor-b
 ```
 
 **npm (wrapper — still requires Python 3.11+ on PATH):**
@@ -87,6 +87,8 @@ own-your-code print-config
 
 **uv users:** if `own-your-code-mcp` is not on PATH but `uvx` is, `own-your-code install` writes a block that runs `uvx --from own-your-code own-your-code-mcp` (once the package is on PyPI).
 
+**`own-your-code install --platform` IDs** — each maps to a known config location on disk (see `src/cli.py` for exact paths). Use `all` to update every configured location.
+
 ### 2. Add to your MCP host
 
 After `own-your-code install`, restart the editor. To configure by hand from a git checkout:
@@ -117,7 +119,7 @@ Or if installed as a package:
 
 ### 3. Register your project
 
-In your agent (Claude, Cursor, etc.):
+From your MCP client:
 
 ```
 register_project path="/path/to/your/project"
@@ -127,7 +129,7 @@ This scans all Python, TypeScript, JavaScript, and Go files and indexes every fu
 
 ### 4. Start building
 
-As you write code, your agent calls `record_intent` automatically:
+As you write code, use `record_intent` from MCP (manually or via your host’s automation):
 
 ```
 record_intent

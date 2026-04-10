@@ -5,7 +5,7 @@ description = "Own Your Code — MCP server + UI: record why each function exist
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
-keywords = ["mcp", "intent", "sqlite", "claude", "cursor", "codebase"]
+keywords = ["mcp", "intent", "sqlite", "codebase", "documentation"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -75,9 +75,6 @@ include = [
 own-your-code = "src.cli:main"
 own-your-code-mcp = "src.server:main"
 own-your-code-hook = "src.post_write_hook:main"
-# Back-compat aliases for existing MCP / shell configs
-intent-ledger-mcp = "src.server:main"
-claude-owns-it-mcp = "src.server:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

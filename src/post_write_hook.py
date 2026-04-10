@@ -1,10 +1,10 @@
 """
-Post-write hook (e.g. Claude Code PostToolUse).
+Post-write hook for editors that support post-save / post-edit commands.
 Fires after Write / Edit / NotebookEdit on Python files.
 
 Also available as the ``own-your-code-hook`` console script (on PATH after pip/pipx install).
 
-Claude Code example (use the command name so paths stay portable):
+Example hook config (shape depends on your editor; use ``own-your-code-hook`` on PATH):
 
 {
   "hooks": {

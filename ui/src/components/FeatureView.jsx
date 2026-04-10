@@ -28,7 +28,7 @@ export default function FeatureView({ projectPath, onSelect }) {
   if (!features.length) {
     return (
       <div className={s.empty}>
-        No feature clusters yet. When your agent records intents with a <code className={s.code}>feature</code> label, related functions group here.
+        No feature clusters yet. When intents include a <code className={s.code}>feature</code> label, related functions group here.
       </div>
     )
   }

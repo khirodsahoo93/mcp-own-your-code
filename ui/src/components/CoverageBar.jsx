@@ -31,7 +31,7 @@ export default function CoverageBar({ total, annotated, coverage, features, unan
           <span className={s.alertTitle}>Editor hook queue</span>
           <span className={s.alertBody}>
             {pending} file{pending === 1 ? '' : 's'} still need <code className={s.code}>record_intent</code> or{' '}
-            <code className={s.code}>mark_file_reviewed</code> — ask your coding agent to drain the queue.
+            <code className={s.code}>mark_file_reviewed</code> — drain the queue via MCP when appropriate.
           </span>
           <span className={s.alertFiles}>
             {hookBacklog.slice(0, 4).map(b => (

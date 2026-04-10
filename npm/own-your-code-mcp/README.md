@@ -6,7 +6,7 @@ Node users can run:
 npx own-your-code-mcp install
 ```
 
-This installs the **[own-your-code](https://pypi.org/project/own-your-code/)** Python package (PyPI) if needed, then runs `own-your-code install` to merge MCP config for Cursor, Claude Desktop, and Windsurf.
+This installs the **[own-your-code](https://pypi.org/project/own-your-code/)** Python package (PyPI) if needed, then runs `own-your-code install` to merge MCP config into the host paths documented in the main README (`editor-a` / `editor-b` / `editor-c`).
 
 **Requirements:** Python **3.11+** on your PATH (`python3` / `python`).
 

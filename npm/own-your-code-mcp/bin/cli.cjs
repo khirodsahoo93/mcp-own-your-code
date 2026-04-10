@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Delegates to the Python `own-your-code` CLI after ensuring the PyPI package is importable.
- * Usage: npx own-your-code-mcp install [--platform cursor] [--dry-run]
+ * Usage: npx own-your-code-mcp install [--platform editor-a] [--dry-run]
  */
 const { spawnSync } = require("child_process");
 
@@ -63,7 +63,7 @@ if (!py) {
 
 const args = process.argv.slice(2);
 if (args.length === 0) {
-  console.error("Usage: npx own-your-code-mcp install [--platform cursor] [--dry-run]\n       npx own-your-code-mcp print-config");
+  console.error("Usage: npx own-your-code-mcp install [--platform editor-a] [--dry-run]\n       npx own-your-code-mcp print-config");
   process.exit(2);
 }
 

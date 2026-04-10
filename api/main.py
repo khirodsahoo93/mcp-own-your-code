@@ -48,7 +48,7 @@ def _auth(x_api_key: Optional[str] = Header(None, alias="X-Api-Key")):
 
 app = FastAPI(
     title="Own Your Code",
-    description="Living intent map — why your code exists, captured as you build (any MCP-capable agent).",
+    description="Living intent map — why your code exists, captured as you build via MCP.",
     dependencies=[Depends(_auth)],
 )
 app.add_middleware(

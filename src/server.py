@@ -1,7 +1,7 @@
 """
 MCP server: Own Your Code
 
-Any coding agent with MCP can call these tools while it builds — capturing WHY
+Any MCP client can call these tools while code changes — capturing WHY
 each function exists, what tradeoffs were made, and how things evolve.
 
 Core tools:
@@ -319,7 +319,7 @@ def _register_project(args: dict) -> str:
         "parse_errors": errors,
         "next_step": (
             "Use annotate_existing to infer intent for existing functions, or start writing new code "
-            "and call record_intent after each function. Any MCP-capable coding agent can use these tools."
+            "and call record_intent after each function. Any MCP client can use these tools."
         ),
     }, indent=2)
 
@@ -649,7 +649,7 @@ def _annotate_existing(args: dict) -> str:
                 "For each file, call annotate_existing with the file path and your inferred annotations. "
                 "Read the source of each function and infer: what user request likely caused this? "
                 "Set confidence=1-3 since you are inferring, not recalling. "
-                "Works with any MCP-enabled coding agent."
+                "Works with any MCP-enabled client."
             ),
         }, indent=2)
 

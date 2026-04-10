@@ -2,7 +2,7 @@
 
 This project uses **Own Your Code** (your team’s MCP install): a small server that stores **why** functions exist, **what was decided**, and **how code evolved**.
 
-## For any coding agent (Claude, GPT, Cursor, Copilot, …)
+## For any MCP-connected editor or automation
 
 1. **`register_project`** once with the absolute path to this repo root (if not already registered).
 2. After you **write or materially change** a function, call **`record_intent`** with `user_request` at minimum; add `reasoning`, `feature`, and `decisions` when possible.

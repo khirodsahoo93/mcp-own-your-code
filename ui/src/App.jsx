@@ -38,7 +38,7 @@ export default function App() {
       <header className={s.header}>
         <div className={s.headerLeft}>
           <span className={s.logo}>◇ Own Your Code</span>
-          <span className={s.tagline}>why your code exists — captured as you build · any MCP-capable agent</span>
+          <span className={s.tagline}>why your code exists — captured as you build · any MCP client</span>
         </div>
         <ProjectBar onLoaded={onProjectLoaded} current={project} />
       </header>
@@ -61,7 +61,7 @@ export default function App() {
             <div className={s.splashTitle}>Own Your Code</div>
             <div className={s.splashSub}>
               A living map of why every function exists — user requests, tradeoffs, and evolution —
-              <br />recorded by your coding agent (Claude, Cursor, Copilot, or any MCP client).
+              <br />recorded via MCP as you work.
             </div>
             <div className={s.splashSteps}>
               <Step n="1" text="Register your project" />

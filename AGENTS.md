@@ -1,8 +1,8 @@
-# Own Your Code — rules for any coding agent
+# Own Your Code — rules for MCP clients
 
 You are working with **Own Your Code** (MCP server `own-your-code`, SQLite store). Your job is to leave a **durable “why” layer** next to the code so humans and future sessions can navigate by **intent**, not only by symbols.
 
-These rules apply whether you run as Claude, GPT, Gemini, or any other MCP-capable assistant.
+These rules apply to any tool that speaks MCP to this server.
 
 ## When to act
 
@@ -43,10 +43,10 @@ Calling `record_intent` **clears the editor-hook backlog** for that file.
 ## Honesty
 
 - Prefer accurate **confidence** (5 = you just wrote it; 1–3 = inferred).
-- **`find_by_intent`** is **keyword** search, not semantic embeddings — set user expectations if they ask for “semantic” search.
+- **`find_by_intent`** keyword / hybrid modes are documented in the README — set user expectations for search quality.
 
 ## Where state lives
 
 - Database file: **`owns.db`** by default in the **server** project directory (the MCP `cwd`), or the path in **`OWN_YOUR_CODE_DB`** if set — not inside each app repo unless you configure otherwise.
 
-Copy **`templates/PROJECT-INTENT.md`** into repos you care about so every agent session sees the same expectations.
+Copy **`templates/PROJECT-INTENT.md`** into repos you care about so every session sees the same expectations.

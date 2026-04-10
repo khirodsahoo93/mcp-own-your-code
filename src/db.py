@@ -13,9 +13,9 @@ Default location:
 Tables:
   projects          — registered codebases
   functions         — every known function (AST-extracted)
-  intents           — WHY a function exists (captured by the coding agent)
+  intents           — WHY a function exists (captured via MCP / tooling)
   intent_embeddings — vector embeddings for semantic search (optional)
-  decisions         — tradeoffs the agent recorded (chosen vs alternatives, why)
+  decisions         — tradeoffs recorded (chosen vs alternatives, why)
   evolution         — timeline of changes to a function and the reason each time
   feature_links     — many:many between functions and the user feature that caused them
   features          — high-level features / user requests that triggered code

@@ -66,7 +66,7 @@ export default function FunctionDetail({ projectPath, functionName, onClose }) {
       {!latest && (
         <section className={s.section}>
           <h2 className={s.h2}>Intent</h2>
-          <p className={s.muted}>Not annotated yet. Ask your coding agent (MCP) to call <code className={s.code}>record_intent</code> or <code className={s.code}>annotate_existing</code>.</p>
+          <p className={s.muted}>Not annotated yet. Use MCP <code className={s.code}>record_intent</code> or <code className={s.code}>annotate_existing</code>.</p>
         </section>
       )}
 
