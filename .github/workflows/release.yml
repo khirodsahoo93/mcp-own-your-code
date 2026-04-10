@@ -1,0 +1,57 @@
+# Publish to PyPI (OIDC) and npm when you push a version tag: git tag v0.1.0 && git push origin v0.1.0
+#
+# PyPI: https://docs.pypi.org/trusted-publishers/adding-a-publisher/
+#   - Project → Manage → Publishing → Add a pending publisher (GitHub, this repo, workflow: release.yml)
+# npm: add repository secret NPM_TOKEN (granular token with publish for own-your-code-mcp)
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  pypi:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build
+        run: pip install build
+
+      - name: Build sdist and wheel
+        run: python -m build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+
+  npm:
+    name: Publish npm shim
+    # Skip when secret is unset so PyPI-only releases still succeed.
+    if: secrets.NPM_TOKEN
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: npm publish
+        working-directory: npm/own-your-code-mcp
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
