@@ -223,10 +223,11 @@ Same SQLite database as MCP. No editor required.
 | `own-your-code --help` | All subcommands |
 | `own-your-code install` | Merge MCP config into host JSON files |
 | `own-your-code print-config` | Print `mcpServers` fragment |
-| `own-your-code status` | DB path, registered projects (or stats for one path) |
-| `own-your-code update PATH` | Scan/index a project (like `register_project`) |
-| `own-your-code visualize --project-path P --out report.html` | Standalone HTML intent report |
-| `own-your-code watch --project-path P` | Print coverage stats on an interval |
+| `own-your-code status [--project-path P]` | DB path; if cwd is inside a registered project, show its stats, else list projects (or use `--project-path`) |
+| `own-your-code update [PATH]` | Scan/index a project (like `register_project`); **PATH defaults to the current directory** |
+| `own-your-code prune [PATH] [--dry-run]` | Remove **stale** `functions` rows (and linked intents, etc.) not in a fresh scan; fixes inflated counts after narrowing skip rules |
+| `own-your-code visualize [--project-path P] --out report.html` | Standalone HTML report; **P defaults to cwd** (must lie inside a registered root) |
+| `own-your-code watch [--project-path P]` | Print coverage stats on an interval; **P defaults to cwd** |
 
 Use `OWN_YOUR_CODE_DB` to point at a specific database file.
 
@@ -256,6 +257,8 @@ cd ui && npm install && npm run dev
 ```
 
 Dev server: **http://localhost:5175** (proxies API routes to 8002).
+
+If the API runs on another host or port, set **`VITE_API_PROXY`** (for example in `ui/.env.development`: `VITE_API_PROXY=http://127.0.0.1:8003`) so Vite proxies `/evolution`, `/projects`, and other API paths to the correct server. Without this, Timeline and other tabs can show a JSON parse error when the proxy hits the wrong process and returns HTML.
 
 ### Using the UI
 
@@ -345,6 +348,8 @@ Register with filters (REST body or MCP args as supported):
   "ignore_dirs": ["vendor", "generated"]
 }
 ```
+
+**Default skips:** Indexing always skips common tooling and dependency trees (for example `node_modules`, `.git`, `.venv`, `.venv-pypi-test`, `.pytest_cache`, `.ruff_cache`, `site-packages`, `dist`, `build`, `htmlcov`, `Pods`, and paths under `*.egg-info`). Use `ignore_dirs` to add project-specific folder names.
 
 | Language | Parser | Notes |
 |----------|--------|--------|

@@ -163,3 +163,25 @@ def test_scan_project_multi_ignore_dirs(tmp_path):
     names = [f["name"] for f in fns]
     assert "keep" in names
     assert "skip" not in names
+
+
+def test_scan_project_multi_skips_extra_venv_and_site_packages(tmp_path):
+    (tmp_path / "good.py").write_text("def keep(): pass\n")
+    nested = tmp_path / ".venv-pypi-test" / "lib" / "site-packages" / "pkg"
+    nested.mkdir(parents=True)
+    (nested / "noise.py").write_text("def skip_me(): pass\n")
+    fns, _ = scan_project_multi(str(tmp_path))
+    names = [f["name"] for f in fns]
+    assert "keep" in names
+    assert "skip_me" not in names
+
+
+def test_scan_project_multi_skips_egg_info_dir_name(tmp_path):
+    (tmp_path / "app.py").write_text("def keep(): pass\n")
+    egg = tmp_path / "mydist-0.1.egg-info"
+    egg.mkdir()
+    (egg / "fake.py").write_text("def bogus(): pass\n")
+    fns, _ = scan_project_multi(str(tmp_path))
+    names = [f["name"] for f in fns]
+    assert "keep" in names
+    assert "bogus" not in names

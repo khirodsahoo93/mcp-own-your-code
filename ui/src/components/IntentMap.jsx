@@ -1,17 +1,22 @@
 import { useState, useEffect } from 'react'
-import { apiFetch } from '../api.js'
+import { apiJson } from '../api.js'
 import s from './IntentMap.module.css'
 
 export default function IntentMap({ projectPath, selected, onSelect }) {
   const [map, setMap]       = useState(null)
+  const [loadErr, setLoadErr] = useState(null)
   const [filter, setFilter] = useState('all')  // all | annotated | unannotated
   const [search, setSearch] = useState('')
 
   useEffect(() => {
-    apiFetch(`/map?project_path=${encodeURIComponent(projectPath)}`)
-      .then(r => r.json()).then(setMap)
+    setLoadErr(null)
+    setMap(null)
+    apiJson(`/map?project_path=${encodeURIComponent(projectPath)}`)
+      .then(setMap)
+      .catch(e => setLoadErr(e.message))
   }, [projectPath])
 
+  if (loadErr) return <div className={s.loading}>{loadErr}</div>
   if (!map) return <div className={s.loading}>Loading map…</div>
 
   const entries = Object.entries(map.by_file)

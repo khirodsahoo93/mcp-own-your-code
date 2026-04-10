@@ -13,14 +13,16 @@ function daysAgo(ts) {
   return (Date.now() - t) / (24 * 3600 * 1000)
 }
 
-export default function ProjectInsights({ map, onSelect }) {
+export default function ProjectInsights({ map, onPickFunction }) {
   const { quality, files } = useMemo(() => {
     const all = []
     const files = Object.entries(map?.by_file || {}).map(([file, fns]) => {
       const total = fns.length
       const annotated = fns.filter(f => f.has_intent).length
       all.push(...fns)
-      return { file, total, annotated, coverage: pct(annotated, total) }
+      const withIntent = fns.filter(f => f.has_intent)
+      const jumpTo = (withIntent[0] || fns[0])?.qualname ?? null
+      return { file, total, annotated, coverage: pct(annotated, total), jumpTo }
     }).sort((a, b) => a.coverage - b.coverage || b.total - a.total)
 
     const annotatedFns = all.filter(f => f.has_intent && f.intent)
@@ -62,7 +64,12 @@ export default function ProjectInsights({ map, onSelect }) {
       <ul className={s.fileList}>
         {files.slice(0, 12).map(f => (
           <li key={f.file}>
-            <button type="button" className={s.fileRow} onClick={() => onSelect(null)}>
+            <button
+              type="button"
+              className={s.fileRow}
+              disabled={!f.jumpTo}
+              onClick={() => f.jumpTo && onPickFunction(f.jumpTo)}
+            >
               <span className={s.file}>{f.file}</span>
               <span className={s.val}>{f.annotated}/{f.total} ({f.coverage}%)</span>
               <span className={s.track}><span className={s.fill} style={{ width: `${f.coverage}%` }} /></span>

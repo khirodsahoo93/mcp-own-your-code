@@ -232,9 +232,9 @@ They are **not** competing feature sets by design: **agents** are best served by
 **Own Your Code** exposes both:
 
 - **MCP:** `register_project`, `record_intent`, `get_codebase_map`, …
-- **CLI:** `install`, `print-config`, **`status`**, **`update`** (re-index), **`visualize --out report.html`**, **`watch`** (coverage poll).
+- **CLI:** `install`, `print-config`, **`status`** (optional `--project-path`; otherwise **infer from cwd** or list projects), **`update`** (optional path — defaults to **cwd**), **`prune`** (drop DB rows not in a fresh scan; use **`--dry-run`** first), **`visualize --out report.html`** (optional `--project-path`; defaults to **cwd**), **`watch`** (same).
 
-Same **SQLite** database and **`project_path`** rules; use whichever fits the moment.
+Same **SQLite** database and **`project_path`** rules; use whichever fits the moment. The CLI can default to “this folder” because your shell’s cwd is your app repo; the MCP server usually is **not** started from that repo, so agents still pass an explicit **`project_path`**.
 
 ---
 

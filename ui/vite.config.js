@@ -1,25 +1,37 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
-export default defineConfig({
-  plugins: [react()],
-  server: {
-    port: 5175,
-    proxy: {
-      '/projects': 'http://localhost:8002',
-      '/register': 'http://localhost:8002',
-      '/map': 'http://localhost:8002',
-      '/features': 'http://localhost:8002',
-      '/function': 'http://localhost:8002',
-      '/search': 'http://localhost:8002',
-      '/stats': 'http://localhost:8002',
-      '/graph': 'http://localhost:8002',
-      '/evolution': 'http://localhost:8002',
-      '/embed': 'http://localhost:8002',
-      '/server-info': 'http://localhost:8002',
-      '/health': 'http://localhost:8002',
-      '/docs': 'http://localhost:8002',
-      '/openapi.json': 'http://localhost:8002',
-      '/redoc': 'http://localhost:8002',
+
+const API_PATHS = [
+  '/projects',
+  '/register',
+  '/map',
+  '/features',
+  '/function',
+  '/search',
+  '/stats',
+  '/graph',
+  '/evolution',
+  '/embed',
+  '/server-info',
+  '/health',
+  '/docs',
+  '/openapi.json',
+  '/redoc',
+]
+
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, '.', '')
+  const target = env.VITE_API_PROXY || 'http://127.0.0.1:8002'
+  const proxy = {}
+  for (const path of API_PATHS) {
+    proxy[path] = { target, changeOrigin: true }
+  }
+
+  return {
+    plugins: [react()],
+    server: {
+      port: 5175,
+      proxy,
     },
-  },
+  }
 })

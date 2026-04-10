@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { apiFetch, getApiKey, setApiKey } from '../api.js'
+import { apiJson, getApiKey, setApiKey } from '../api.js'
 import s from './ServerFooter.module.css'
 
 export default function ServerFooter({ onApiKeySaved }) {
@@ -11,9 +11,7 @@ export default function ServerFooter({ onApiKeySaved }) {
   const load = useCallback(async () => {
     setErr(null)
     try {
-      const r = await apiFetch('/server-info')
-      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || r.statusText)
-      setInfo(await r.json())
+      setInfo(await apiJson('/server-info'))
     } catch (e) {
       setErr(e.message)
       setInfo(null)

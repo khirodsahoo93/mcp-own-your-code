@@ -11,13 +11,42 @@ import ast
 import textwrap
 from pathlib import Path
 
-SKIP_DIRS = {"__pycache__", ".git", ".venv", "venv", "node_modules",
-             "dist", "build", ".mypy_cache", "migrations", ".next", "target",
-             ".tox", "coverage", "__snapshots__"}
+# Directory *names* (any path component) skipped during rglob scans.
+# Keep this conservative: only tooling, deps, and build output — not generic names like "tmp".
+SKIP_DIRS = frozenset({
+    "__pycache__", "__snapshots__",
+    ".git", ".hg", ".svn",
+    # Python / packaging
+    ".venv", "venv", "env", ".virtualenv",
+    ".venv-pypi-test",  # ad-hoc test venvs
+    ".tox", ".nox", ".conda", ".pixi", ".direnv",
+    ".mypy_cache", ".pytest_cache", ".ruff_cache", ".hypothesis",
+    "site-packages",  # unpacked wheels / broken-out venv trees
+    # JS / front-end
+    "node_modules", "bower_components", "jspm_packages",
+    ".next", ".nuxt", ".output", ".turbo", ".parcel-cache", ".vite",
+    # Build / artifacts
+    "dist", "build", "target", "coverage", "htmlcov", "Pods", "Carthage",
+    "DerivedData", ".gradle",
+    # Bundler / vendored deps (common dir name)
+    "vendor",
+    # DB migrations are rarely intent targets
+    "migrations",
+})
 SKIP_DUNDERS = {"__str__", "__repr__", "__eq__", "__hash__", "__lt__",
                 "__le__", "__gt__", "__ge__", "__contains__", "__len__",
                 "__iter__", "__next__", "__enter__", "__exit__",
                 "__getitem__", "__setitem__", "__delitem__"}
+
+
+def _path_has_skipped_part(path: Path, skip: set[str]) -> bool:
+    """True if any path component is in *skip* or looks like a packaging artifact."""
+    for part in path.parts:
+        if part in skip:
+            return True
+        if part.endswith(".egg-info"):
+            return True
+    return False
 
 
 def scan_project(root: str) -> tuple[list[dict], list[str]]:
@@ -25,8 +54,9 @@ def scan_project(root: str) -> tuple[list[dict], list[str]]:
     root_path = Path(root).resolve()
     functions, errors = [], []
 
+    skip = set(SKIP_DIRS)
     for path in sorted(root_path.rglob("*.py")):
-        if any(part in SKIP_DIRS for part in path.parts):
+        if _path_has_skipped_part(path, skip):
             continue
         rel = str(path.relative_to(root_path))
         try:
@@ -63,7 +93,7 @@ def scan_project_multi(
     from .extractors import get_extractor, SUPPORTED_EXTENSIONS
 
     root_path = Path(root).resolve()
-    skip = SKIP_DIRS | set(ignore_dirs or [])
+    skip = set(SKIP_DIRS) | set(ignore_dirs or [])
     functions: list[dict] = []
     errors: list[str] = []
 
@@ -81,7 +111,7 @@ def scan_project_multi(
     for path in candidates:
         if not path.is_file():
             continue
-        if any(part in skip for part in path.parts):
+        if _path_has_skipped_part(path, skip):
             continue
         ext = path.suffix.lower()
         extractor = get_extractor(ext)

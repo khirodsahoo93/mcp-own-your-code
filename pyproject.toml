@@ -1,6 +1,6 @@
 [project]
 name = "own-your-code"
-version = "0.1.5"
+version = "0.1.6"
 description = "Own Your Code — MCP server + UI: record why each function exists, tradeoffs, and evolution (SQLite)"
 readme = "README.md"
 license = "MIT"

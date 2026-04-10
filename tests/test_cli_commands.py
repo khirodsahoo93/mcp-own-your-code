@@ -27,6 +27,16 @@ def test_status_empty_project_list(isolated_db, capsys):
     assert "No projects registered" in out
 
 
+def test_update_defaults_to_cwd(isolated_db, tmp_path, monkeypatch):
+    proj = tmp_path / "proj"
+    proj.mkdir()
+    (proj / "a.py").write_text("def from_cwd(): pass\n")
+    monkeypatch.chdir(proj)
+    assert main(["update"]) == 0
+    root = proj.resolve()
+    assert main(["status", "--project-path", str(root)]) == 0
+
+
 def test_update_then_status_and_visualize(isolated_db, tmp_path, capsys):
     proj = tmp_path / "proj"
     proj.mkdir()
@@ -46,3 +56,24 @@ def test_update_then_status_and_visualize(isolated_db, tmp_path, capsys):
     assert "Own Your Code" in text
     assert "foo" in text
     assert "a.py" in text
+
+
+def test_status_visualize_infer_project_from_cwd(isolated_db, tmp_path, capsys, monkeypatch):
+    proj = tmp_path / "proj"
+    proj.mkdir()
+    (proj / "a.py").write_text("def bar(): pass\n")
+    assert main(["update", str(proj)]) == 0
+
+    monkeypatch.chdir(proj)
+    assert main(["status"]) == 0
+    assert "coverage:" in capsys.readouterr().out
+
+    html_out = tmp_path / "from_cwd.html"
+    assert main(["visualize", "--out", str(html_out)]) == 0
+    assert "bar" in html_out.read_text(encoding="utf-8")
+
+
+def test_visualize_without_project_path_errors_outside_repo(isolated_db, tmp_path, capsys):
+    assert main(["visualize", "--out", str(tmp_path / "x.html")]) != 0
+    err = capsys.readouterr().err
+    assert "No registered project" in err or "current directory" in err

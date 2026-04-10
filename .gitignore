@@ -12,6 +12,7 @@ htmlcov/
 
 # Local SQLite (set OWN_YOUR_CODE_DB in production)
 owns.db
+.cli-test.db
 *.db-journal
 
 # Node / UI

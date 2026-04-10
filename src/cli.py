@@ -4,12 +4,18 @@ User-facing CLI: MCP installer + terminal helpers.
   own-your-code install [--platform editor-a|editor-b|editor-c|all] [--dry-run]
   own-your-code print-config
   own-your-code status [--project-path PATH]
-  own-your-code update PATH [--name NAME]
-  own-your-code visualize --project-path PATH --out FILE.html
-  own-your-code watch --project-path PATH [--interval SEC]
+  own-your-code update [PATH] [--name NAME]   (PATH defaults to current directory)
+  own-your-code prune [PATH] [--dry-run]      (remove DB rows not in current scan)
+  own-your-code visualize [--project-path PATH] --out FILE.html
+  own-your-code watch [--project-path PATH] [--interval SEC]
 
 MCP tools (record_intent, register_project, …) are for AI hosts over stdio.
 These CLI commands are for you in a terminal — same SQLite DB, same project_path rules.
+
+Why ``project_path`` exists: the MCP server often runs with cwd = this package’s install
+directory, not your app repo, and one DB can hold many projects — so tools need an
+explicit root. In a terminal, ``cd`` into your repo and run ``update`` with no path
+(or ``update .``) to register the current directory.
 
 Platform IDs map to common MCP config file locations on disk (see README).
 """
@@ -55,6 +61,14 @@ PLATFORM_PATHS: dict[str, list[Path]] = {
     "editor-b": _paths_editor_b,
     "editor-c": _paths_editor_c,
 }
+
+
+def shlex_quote(s: str) -> str:
+    if not s:
+        return "''"
+    if all(c.isalnum() or c in "/._-:" for c in s):
+        return s
+    return json.dumps(s)
 
 
 def resolve_mcp_server_block() -> tuple[dict, str]:
@@ -148,6 +162,76 @@ def cmd_install(platforms: list[str], dry_run: bool) -> int:
     return 0
 
 
+def infer_registered_project_from_cwd() -> str | None:
+    """
+    If the current working directory is a registered project root, or lies inside one,
+    return that project's stored path (the longest / most specific match). Otherwise None.
+    """
+    from src import db
+
+    try:
+        cwd = Path.cwd().resolve()
+    except (OSError, RuntimeError):
+        return None
+
+    cwd_s = str(cwd)
+    if db.get_project(cwd_s):
+        return cwd_s
+
+    candidates: list[str] = []
+    for row in db.list_projects():
+        reg = row["path"]
+        try:
+            base = Path(reg).resolve()
+        except OSError:
+            base = Path(reg)
+        if cwd == base:
+            candidates.append(reg)
+            continue
+        try:
+            if cwd.is_relative_to(base):
+                candidates.append(reg)
+        except ValueError:
+            pass
+
+    if not candidates:
+        return None
+    return max(candidates, key=lambda s: len(Path(s).parts))
+
+
+def resolve_cli_project_path(explicit: str | None) -> tuple[str | None, str | None]:
+    """
+    Resolve which registered project path to use for visualize/watch (and optional status).
+
+    Returns (registered_path, err_msg). err_msg set when resolution fails.
+    """
+    from src import db
+
+    if explicit:
+        root = Path(explicit).expanduser().resolve()
+        s = str(root)
+        if db.get_project(s):
+            return s, None
+        return None, (
+            f"Not registered: {s}\n"
+            f"Run: own-your-code update {shlex_quote(s)}"
+        )
+
+    inferred = infer_registered_project_from_cwd()
+    if inferred:
+        return inferred, None
+
+    try:
+        cwd_s = str(Path.cwd().resolve())
+    except (OSError, RuntimeError):
+        cwd_s = "(could not resolve cwd)"
+    return None, (
+        f"No registered project contains the current directory {cwd_s}.\n"
+        "From your repo root run: own-your-code update\n"
+        "Or pass: --project-path /absolute/path/to/project"
+    )
+
+
 def cmd_status(project_path: str | None) -> int:
     """Print DB location and optional per-project coverage stats."""
     from src import db
@@ -156,14 +240,18 @@ def cmd_status(project_path: str | None) -> int:
     if not db.DB_PATH.exists():
         print("(file not created yet — run register/update or MCP register_project.)")
     if not project_path:
-        projects = db.list_projects()
-        if not projects:
-            print("No projects registered yet.")
+        inferred = infer_registered_project_from_cwd()
+        if inferred:
+            project_path = inferred
         else:
-            print("Registered projects:")
-            for p in projects:
-                print(f"  {p['path']}")
-        return 0
+            projects = db.list_projects()
+            if not projects:
+                print("No projects registered yet.")
+            else:
+                print("Registered projects:")
+                for p in projects:
+                    print(f"  {p['path']}")
+            return 0
 
     proj = db.get_project(project_path)
     if not proj:
@@ -205,17 +293,51 @@ def cmd_update(path: str, name: str | None) -> int:
     return 0
 
 
-def shlex_quote(s: str) -> str:
-    if not s:
-        return "''"
-    if all(c.isalnum() or c in "/._-:" for c in s):
-        return s
-    return json.dumps(s)
+def cmd_prune(path: str, dry_run: bool) -> int:
+    """Remove functions (and intents, etc.) not present in a fresh scan."""
+    from src import db
+    from src.extractor import scan_project_multi
+
+    root = Path(path).expanduser().resolve()
+    if not root.is_dir():
+        print(f"Not a directory: {root}", file=sys.stderr)
+        return 1
+
+    proj = db.get_project(str(root))
+    if not proj:
+        print(f"Not registered: {root}", file=sys.stderr)
+        print(f"Run: own-your-code update {shlex_quote(str(root))}", file=sys.stderr)
+        return 1
+
+    functions, errors = scan_project_multi(str(root))
+    keys = {(f["file"], f["qualname"]) for f in functions}
+    stats = db.prune_stale_functions(proj["id"], keys, dry_run=dry_run)
+
+    label = "Would remove" if dry_run else "Removed"
+    print(
+        f"{label} {stats['removed_functions']} stale function row(s); "
+        f"intents {stats['removed_intents']}, decisions {stats['removed_decisions']}, "
+        f"evolution {stats['removed_evolution']}, feature_links {stats['removed_feature_links']}, "
+        f"intent_embeddings {stats['removed_intent_embeddings']}."
+    )
+    if dry_run:
+        print("(dry-run — no changes written. Run without --dry-run to apply.)")
+    for e in errors[:5]:
+        print(f"  parse note: {e}", file=sys.stderr)
+    if len(errors) > 5:
+        print(f"  … and {len(errors) - 5} more parse notes", file=sys.stderr)
+    return 0
 
 
-def cmd_visualize(project_path: str, out: Path) -> int:
+def cmd_visualize(project_path: str | None, out: Path) -> int:
     """Write a standalone HTML report (open in a browser)."""
     from src import db
+
+    resolved, err = resolve_cli_project_path(project_path)
+    if err:
+        print(err, file=sys.stderr)
+        return 1
+    project_path = resolved
 
     proj = db.get_project(project_path)
     if not proj:
@@ -287,9 +409,15 @@ th{{background:#161b22;color:#8b949e;}}
     return 0
 
 
-def cmd_watch(project_path: str, interval: int) -> int:
+def cmd_watch(project_path: str | None, interval: int) -> int:
     """Print coverage stats every INTERVAL seconds until Ctrl+C."""
     from src import db
+
+    resolved, err = resolve_cli_project_path(project_path)
+    if err:
+        print(err, file=sys.stderr)
+        return 1
+    project_path = resolved
 
     proj = db.get_project(project_path)
     if not proj:
@@ -344,28 +472,59 @@ def main(argv: list[str] | None = None) -> int:
     p_status.add_argument(
         "--project-path",
         metavar="PATH",
-        help="Absolute path to a registered project root (optional).",
+        help="Registered project root (optional). If omitted: use cwd when it lies inside a registered project, else list all projects.",
     )
 
     p_up = sub.add_parser(
         "update",
         help="Scan and index a codebase (terminal equivalent of MCP register_project).",
     )
-    p_up.add_argument("path", help="Absolute path to project root")
+    p_up.add_argument(
+        "path",
+        nargs="?",
+        default=".",
+        help="Project root (default: current working directory). Use . or an absolute path.",
+    )
     p_up.add_argument("--name", default=None, help="Optional display name")
+
+    p_prune = sub.add_parser(
+        "prune",
+        help="Delete function rows (and linked intents, etc.) not found in a fresh scan.",
+    )
+    p_prune.add_argument(
+        "path",
+        nargs="?",
+        default=".",
+        help="Project root (default: current working directory). Must match a registered path.",
+    )
+    p_prune.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show counts only; do not delete.",
+    )
 
     p_vis = sub.add_parser(
         "visualize",
         help="Write a standalone HTML intent report (open in a browser).",
     )
-    p_vis.add_argument("--project-path", required=True, metavar="PATH", help="Registered project root")
+    p_vis.add_argument(
+        "--project-path",
+        default=None,
+        metavar="PATH",
+        help="Registered project root (default: infer from current directory).",
+    )
     p_vis.add_argument("--out", required=True, type=Path, metavar="FILE.html", help="Output HTML path")
 
     p_watch = sub.add_parser(
         "watch",
         help="Print coverage stats every N seconds until Ctrl+C.",
     )
-    p_watch.add_argument("--project-path", required=True, metavar="PATH", help="Registered project root")
+    p_watch.add_argument(
+        "--project-path",
+        default=None,
+        metavar="PATH",
+        help="Registered project root (default: infer from current directory).",
+    )
     p_watch.add_argument("--interval", type=int, default=30, metavar="SEC", help="Seconds between lines (default: 30)")
 
     args = parser.parse_args(argv)
@@ -384,6 +543,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "update":
         return cmd_update(args.path, args.name)
+
+    if args.cmd == "prune":
+        return cmd_prune(args.path, args.dry_run)
 
     if args.cmd == "visualize":
         return cmd_visualize(args.project_path, args.out)

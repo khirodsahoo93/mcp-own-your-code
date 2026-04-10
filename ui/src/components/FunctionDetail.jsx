@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
-import { apiFetch } from '../api.js'
+import { apiJson } from '../api.js'
 import s from './FunctionDetail.module.css'
 
 const REPO_URL = (() => { const u = import.meta.env.VITE_REPO_URL || ''; return u.endsWith('/') ? u.slice(0, -1) : u })()
@@ -23,14 +23,7 @@ export default function FunctionDetail({ projectPath, functionName, onClose }) {
     setData(null)
     setErr(null)
     const q = new URLSearchParams({ project_path: projectPath, function_name: functionName })
-    apiFetch(`/function?${q}`)
-      .then(async r => {
-        if (!r.ok) {
-          const d = await r.json().catch(() => ({}))
-          throw new Error(d.detail || r.statusText)
-        }
-        return r.json()
-      })
+    apiJson(`/function?${q}`)
       .then(setData)
       .catch(e => setErr(e.message))
   }, [projectPath, functionName])

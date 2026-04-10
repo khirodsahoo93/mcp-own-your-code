@@ -8,7 +8,7 @@ import EvolutionTimeline from './components/EvolutionTimeline.jsx'
 import ProjectInsights from './components/ProjectInsights.jsx'
 import CoverageBar from './components/CoverageBar.jsx'
 import ServerFooter from './components/ServerFooter.jsx'
-import { apiFetch } from './api.js'
+import { apiJson } from './api.js'
 import s from './App.module.css'
 
 const TABS = ['Intent Map', 'Features', 'Search', 'Timeline']
@@ -20,13 +20,19 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('Intent Map')
   const [selectedFn, setSelectedFn] = useState(null)
   const loadStats = useCallback(async (path) => {
-    const r = await apiFetch(`/stats?project_path=${encodeURIComponent(path)}`)
-    if (r.ok) setStats(await r.json())
+    try {
+      setStats(await apiJson(`/stats?project_path=${encodeURIComponent(path)}`))
+    } catch {
+      /* keep previous stats on transient failures */
+    }
   }, [])
 
   const loadMap = useCallback(async (path) => {
-    const r = await apiFetch(`/map?project_path=${encodeURIComponent(path)}`)
-    if (r.ok) setMap(await r.json())
+    try {
+      setMap(await apiJson(`/map?project_path=${encodeURIComponent(path)}`))
+    } catch {
+      /* keep previous map */
+    }
   }, [])
 
   function onProjectLoaded(proj) {
@@ -84,7 +90,15 @@ export default function App() {
         ) : (
           <>
             <aside className={s.sidebar}>
-              {map && <ProjectInsights map={map} onSelect={setSelectedFn} />}
+              {map && (
+                <ProjectInsights
+                  map={map}
+                  onPickFunction={(qualname) => {
+                    setSelectedFn(qualname)
+                    setActiveTab('Intent Map')
+                  }}
+                />
+              )}
               <div className={s.tabs}>
                 {TABS.map(t => (
                   <button

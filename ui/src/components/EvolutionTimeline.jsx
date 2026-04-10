@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
-import { apiFetch } from '../api.js'
+import { apiJson } from '../api.js'
 import s from './EvolutionTimeline.module.css'
 
 const REPO_URL = (() => { const u = import.meta.env.VITE_REPO_URL || ''; return u.endsWith('/') ? u.slice(0, -1) : u })()
@@ -22,14 +22,7 @@ export default function EvolutionTimeline({ projectPath, onSelect }) {
   useEffect(() => {
     setEntries(null)
     setErr(null)
-    apiFetch(`/evolution?project_path=${encodeURIComponent(projectPath)}&limit=300`)
-      .then(async r => {
-        if (!r.ok) {
-          const d = await r.json().catch(() => ({}))
-          throw new Error(d.detail || r.statusText)
-        }
-        return r.json()
-      })
+    apiJson(`/evolution?project_path=${encodeURIComponent(projectPath)}&limit=300`)
       .then(d => setEntries(d.entries || []))
       .catch(e => setErr(e.message))
   }, [projectPath])

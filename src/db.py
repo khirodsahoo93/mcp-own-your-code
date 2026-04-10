@@ -283,6 +283,120 @@ def get_all_functions(project_id: int) -> list[dict]:
         )]
 
 
+def _chunked_ids(ids: list[int], size: int = 400):
+    """SQLite parameter limits — keep IN clauses small."""
+    for i in range(0, len(ids), size):
+        yield ids[i : i + size]
+
+
+def prune_stale_functions(
+    project_id: int,
+    keep_keys: set[tuple[str, str]],
+    *,
+    dry_run: bool = False,
+) -> dict:
+    """
+    Delete ``functions`` rows for *project_id* whose ``(file, qualname)`` is not in
+    *keep_keys*, and delete dependent intents (plus intent_embeddings), decisions,
+    evolution rows, and feature_links.
+
+    *keep_keys* must match a fresh ``scan_project_multi`` result: ``(fn['file'], fn['qualname'])``.
+
+    **Warning:** Functions only created via ``record_intent`` (never returned by a scan)
+    disappear from *keep_keys* and will be pruned, deleting their ledger rows.
+
+    Returns a dict with counts and ``dry_run`` bool.
+    """
+    _ensure_schema()
+    with conn() as c:
+        rows = c.execute(
+            "SELECT id, file, qualname FROM functions WHERE project_id=?",
+            (project_id,),
+        ).fetchall()
+    stale_ids = [r["id"] for r in rows if (r["file"], r["qualname"]) not in keep_keys]
+
+    out: dict = {
+        "removed_functions": len(stale_ids),
+        "removed_intents": 0,
+        "removed_decisions": 0,
+        "removed_evolution": 0,
+        "removed_feature_links": 0,
+        "removed_intent_embeddings": 0,
+        "dry_run": dry_run,
+    }
+    if not stale_ids:
+        out["removed_functions"] = 0
+        return out
+
+    def _count_intent_embeddings_for_functions(c, batch: list[int]) -> int:
+        q = ",".join("?" * len(batch))
+        row = c.execute(
+            f"""SELECT COUNT(*) FROM intent_embeddings
+                WHERE intent_id IN (SELECT id FROM intents WHERE function_id IN ({q}))""",
+            batch,
+        ).fetchone()
+        return int(row[0]) if row else 0
+
+    if dry_run:
+        with conn() as c:
+            for batch in _chunked_ids(stale_ids):
+                q = ",".join("?" * len(batch))
+                out["removed_intents"] += int(
+                    c.execute(
+                        f"SELECT COUNT(*) FROM intents WHERE function_id IN ({q})",
+                        batch,
+                    ).fetchone()[0]
+                )
+                out["removed_decisions"] += int(
+                    c.execute(
+                        f"SELECT COUNT(*) FROM decisions WHERE function_id IN ({q})",
+                        batch,
+                    ).fetchone()[0]
+                )
+                out["removed_evolution"] += int(
+                    c.execute(
+                        f"SELECT COUNT(*) FROM evolution WHERE function_id IN ({q})",
+                        batch,
+                    ).fetchone()[0]
+                )
+                out["removed_feature_links"] += int(
+                    c.execute(
+                        f"SELECT COUNT(*) FROM feature_links WHERE function_id IN ({q})",
+                        batch,
+                    ).fetchone()[0]
+                )
+                out["removed_intent_embeddings"] += _count_intent_embeddings_for_functions(c, batch)
+        return out
+
+    with conn() as c:
+        c.execute("BEGIN")
+        try:
+            for batch in _chunked_ids(stale_ids):
+                q = ",".join("?" * len(batch))
+                cur = c.execute(
+                    f"""DELETE FROM intent_embeddings WHERE intent_id IN
+                        (SELECT id FROM intents WHERE function_id IN ({q}))""",
+                    batch,
+                )
+                out["removed_intent_embeddings"] += cur.rowcount
+                cur = c.execute(f"DELETE FROM intents WHERE function_id IN ({q})", batch)
+                out["removed_intents"] += cur.rowcount
+                cur = c.execute(f"DELETE FROM decisions WHERE function_id IN ({q})", batch)
+                out["removed_decisions"] += cur.rowcount
+                cur = c.execute(f"DELETE FROM evolution WHERE function_id IN ({q})", batch)
+                out["removed_evolution"] += cur.rowcount
+                cur = c.execute(f"DELETE FROM feature_links WHERE function_id IN ({q})", batch)
+                out["removed_feature_links"] += cur.rowcount
+                c.execute(f"DELETE FROM functions WHERE id IN ({q})", batch)
+            c.execute("COMMIT")
+        except Exception:
+            c.execute("ROLLBACK")
+            raise
+
+    out["removed_functions"] = len(stale_ids)
+    return out
+
+
 # ── intents ────────────────────────────────────────────────────────────────
 
 def record_intent(function_id: int, data: dict) -> int:
