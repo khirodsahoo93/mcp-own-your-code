@@ -39,10 +39,34 @@ That context lives in someone's head, a Slack thread, or nowhere.
 
 ## Quick start
 
-### 1. Install
+### 1. Install (pick one)
+
+**PyPI (after you publish, or use TestPyPI):**
 
 ```bash
-# From source
+pipx install own-your-code # recommended — puts own-your-code-mcp on PATH
+own-your-code install               # merges MCP config for Cursor, Claude Desktop, Windsurf
+```
+
+```bash
+python3 -m pip install own-your-code
+own-your-code install --platform cursor
+own-your-code install --platform claude-desktop
+```
+
+**npm (wrapper — still requires Python 3.11+ on PATH):**
+
+```bash
+npx own-your-code-mcp install
+```
+
+This runs `pip install -U own-your-code` if needed, then the same `own-your-code install` as above. Publish the shim from `npm/own-your-code-mcp/` to the npm registry when you are ready.
+
+Use **`own-your-code-mcp` on PATH** (pipx/pip) for the actual MCP stdio server. The npm package is mainly so people who live in Node can run **`npx … install`** without memorizing pip; running MCP through `npx` is possible (`bin/mcp-shim.cjs`) but adds latency — prefer the Python binary when you can.
+
+**From source:**
+
+```bash
 git clone https://github.com/khirodsahoo93/mcp-own-your-code
 cd mcp-own-your-code
 python -m venv .venv && source .venv/bin/activate
@@ -55,9 +79,17 @@ pip install -e ".[semantic]"
 pip install -e ".[full]"
 ```
 
+Manual JSON fragment (if you skip `install`):
+
+```bash
+own-your-code print-config
+```
+
+**uv users:** if `own-your-code-mcp` is not on PATH but `uvx` is, `own-your-code install` writes a block that runs `uvx --from own-your-code own-your-code-mcp` (once the package is on PyPI).
+
 ### 2. Add to your MCP host
 
-**Claude Code / Claude Desktop** — add to your `mcp.json`:
+After `own-your-code install`, restart the editor. To configure by hand from a git checkout:
 
 ```json
 {
@@ -284,6 +316,38 @@ SQLite. Tables:
 Schema version tracked via `PRAGMA user_version`. Migrations are safe to run on existing databases.
 
 ---
+
+## Publishing (maintainers)
+
+### One-time setup
+
+1. **PyPI** — Create the project `own-your-code` on [pypi.org](https://pypi.org). Under **Manage → Publishing**, add a **trusted publisher** for this GitHub repo and workflow **`.github/workflows/release.yml`** (see [PyPI docs](https://docs.pypi.org/trusted-publishers/)).
+2. **npm** — Log in locally (`npm login`) once, or create a granular **Automation** token and add it as the GitHub secret **`NPM_TOKEN`** for this repository.
+
+### Automated (recommended)
+
+Push a **semver tag** after bumping `version` in `pyproject.toml` and `npm/own-your-code-mcp/package.json`:
+
+```bash
+# bump versions first, commit, then:
+git tag v0.1.0
+git push origin main && git push origin v0.1.0
+```
+
+GitHub Actions **Release** workflow uploads the wheel + sdist to **PyPI** and publishes **`own-your-code-mcp`** to npm.
+
+### Manual
+
+```bash
+python3 -m pip install build twine
+python3 -m build
+TWINE_USERNAME=__token__ TWINE_PASSWORD=pypi-YOUR_PYPI_API_TOKEN python3 -m twine upload dist/*
+```
+
+```bash
+cd npm/own-your-code-mcp
+npm publish --access public
+```
 
 ## License
 

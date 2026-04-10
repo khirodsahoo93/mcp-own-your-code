@@ -1,0 +1,32 @@
+{
+  "name": "own-your-code-mcp",
+  "version": "0.1.0",
+  "description": "npm entrypoint for Own Your Code — ensures the Python package is installed and runs the installer or MCP shim",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/khirodsahoo93/mcp-own-your-code.git",
+    "directory": "npm/own-your-code-mcp"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "own-your-code": "bin/cli.cjs",
+    "own-your-code-mcp": "bin/mcp-shim.cjs"
+  },
+  "keywords": [
+    "mcp",
+    "cursor",
+    "claude",
+    "intent",
+    "own-your-code"
+  ],
+  "files": [
+    "bin",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}
