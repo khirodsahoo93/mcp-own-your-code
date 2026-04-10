@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { apiFetch } from '../api.js'
 import s from './SearchView.module.css'
 
 const MODES = [
@@ -26,7 +27,7 @@ export default function SearchView({ projectPath, onSelect }) {
     setLoading(true)
     setErr(null)
     try {
-      const r = await fetch('/search', {
+      const r = await apiFetch('/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ project_path: projectPath, query: q, mode }),
@@ -47,14 +48,14 @@ export default function SearchView({ projectPath, onSelect }) {
   const runEmbed = useCallback(async () => {
     setEmbedState('loading')
     try {
-      const r = await fetch(`/embed?project_path=${encodeURIComponent(projectPath)}`, { method: 'POST' })
+      const r = await apiFetch(`/embed?project_path=${encodeURIComponent(projectPath)}`, { method: 'POST' })
       const d = await r.json()
       if (!r.ok) throw new Error(d.detail || r.statusText)
       // poll job until done
       const jobId = d.job_id
       for (let i = 0; i < 60; i++) {
         await new Promise(res => setTimeout(res, 500))
-        const s = await fetch(`/embed/${jobId}`)
+        const s = await apiFetch(`/embed/${jobId}`)
         const sd = await s.json()
         if (sd.status === 'done') { setEmbedState(sd); return }
         if (sd.status === 'error') { setEmbedState({ error: sd.error }); return }

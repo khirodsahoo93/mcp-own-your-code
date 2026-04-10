@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { apiFetch } from '../api.js'
 import s from './ProjectBar.module.css'
 
 export default function ProjectBar({ onLoaded, current }) {
@@ -8,15 +9,16 @@ export default function ProjectBar({ onLoaded, current }) {
   const [open, setOpen]     = useState(false)
 
   useEffect(() => {
-    fetch('/projects').then(r => r.json()).then(d => setProjects(d.projects ?? []))
+    apiFetch('/projects').then(r => r.json()).then(d => setProjects(d.projects ?? []))
   }, [current])
 
   async function register() {
     if (!path.trim()) return
     setLoading(true)
     try {
-      const r = await fetch('/register', {
-        method: 'POST', headers: {'Content-Type':'application/json'},
+      const r = await apiFetch('/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: path.trim() }),
       })
       const d = await r.json()

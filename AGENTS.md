@@ -1,5 +1,7 @@
 # Own Your Code — rules for MCP clients
 
+**Who should read this:** Anyone who clones the repo and connects an **AI editor or MCP host** (Cursor, Claude Desktop, Windsurf, …) to the `own-your-code` server. It is **end-user documentation**: it tells the assistant when to call `record_intent`, `record_evolution`, and related tools—not internal maintainer notes.
+
 You are working with **Own Your Code** (MCP server `own-your-code`, SQLite store). Your job is to leave a **durable “why” layer** next to the code so humans and future sessions can navigate by **intent**, not only by symbols.
 
 These rules apply to any tool that speaks MCP to this server.

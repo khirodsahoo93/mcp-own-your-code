@@ -6,8 +6,10 @@ Local: ``uvicorn api.main:app --reload --port 8002``
 Production: set ``PORT`` (e.g. Render/Fly). Optional ``OWN_YOUR_CODE_DB`` for SQLite path.
 
 Auth:
-  Set ``OWN_YOUR_CODE_API_KEY`` to require ``X-Api-Key: <key>`` on every request.
-  Leave unset to run without auth (local / trusted-network only).
+  Set ``OWN_YOUR_CODE_API_KEY`` to require ``X-Api-Key: <key>`` on API routes.
+  ``GET /health`` and ``GET /server-info`` stay public (health checks + UI bootstrap).
+  The built SPA shell and ``/assets/*`` are also unauthenticated so browsers can load the UI;
+  store a key in the UI footer to attach ``X-Api-Key`` to API calls when auth is enabled.
 
 CORS:
   Set ``OWN_YOUR_CODE_CORS_ORIGINS`` to a comma-separated list of allowed origins
@@ -20,7 +22,7 @@ import uuid
 from pathlib import Path
 from typing import Optional
 
-from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -44,12 +46,14 @@ def _auth(x_api_key: Optional[str] = Header(None, alias="X-Api-Key")):
     if _API_KEY and x_api_key != _API_KEY:
         raise HTTPException(401, "Invalid or missing API key. Set X-Api-Key header.")
 
-# ── app ────────────────────────────────────────────────────────────────────
+# ── routers ────────────────────────────────────────────────────────────────
+
+public = APIRouter(tags=["Meta"])
+protected = APIRouter(dependencies=[Depends(_auth)])
 
 app = FastAPI(
     title="Own Your Code",
     description="Living intent map — why your code exists, captured as you build via MCP.",
-    dependencies=[Depends(_auth)],
 )
 app.add_middleware(
     CORSMiddleware,
@@ -63,9 +67,30 @@ app.add_middleware(
 _embed_jobs: dict[str, dict] = {}  # job_id -> {status, ...}
 
 
-@app.get("/health")
+@public.get("/health")
 def health():
     return {"status": "ok", "service": "own-your-code"}
+
+
+@public.get("/server-info")
+def server_info():
+    """Public deployment metadata for the UI and operators (no secrets)."""
+    try:
+        from importlib.metadata import version
+
+        ver = version("own-your-code")
+    except Exception:
+        ver = None
+    return {
+        "service": "own-your-code",
+        "version": ver,
+        "api_auth_required": bool(_API_KEY),
+        "cors_allow_all": _CORS_RAW.strip() == "*",
+        "semantic_stack_installed": emb.embedding_stack_available(),
+        "default_embed_model": emb.DEFAULT_MODEL,
+        "database_env_set": bool(os.environ.get("OWN_YOUR_CODE_DB", "").strip()),
+        "openapi_docs_path": "/docs",
+    }
 
 
 class RegisterReq(BaseModel):
@@ -75,20 +100,21 @@ class RegisterReq(BaseModel):
     include_globs: list[str] = []
     ignore_dirs: list[str] = []
 
+
 class SearchReq(BaseModel):
     project_path: str
     query: str
-    mode: str = "keyword"          # keyword | semantic | hybrid
+    mode: str = "keyword"  # keyword | semantic | hybrid
     limit: int = 20
     semantic_weight: float = 0.5
 
 
-@app.get("/projects")
+@protected.get("/projects", tags=["Projects"])
 def list_projects():
     return {"projects": db.list_projects()}
 
 
-@app.post("/register")
+@protected.post("/register", tags=["Projects"])
 def register(req: RegisterReq):
     if not Path(req.path).exists():
         raise HTTPException(400, f"Path not found: {req.path}")
@@ -107,14 +133,21 @@ def register(req: RegisterReq):
             new += 1
         lang = fn.get("language", "python")
         lang_counts[lang] = lang_counts.get(lang, 0) + 1
-    return {"project_id": pid, "path": req.path, "functions": len(functions),
-            "new": new, "by_language": lang_counts, "errors": errors}
+    return {
+        "project_id": pid,
+        "path": req.path,
+        "functions": len(functions),
+        "new": new,
+        "by_language": lang_counts,
+        "errors": errors,
+    }
 
 
-@app.get("/map")
+@protected.get("/map", tags=["Map"])
 def codebase_map(project_path: str, file: Optional[str] = None):
     proj = db.get_project(project_path)
-    if not proj: raise HTTPException(404, "Project not registered")
+    if not proj:
+        raise HTTPException(404, "Project not registered")
     cmap = db.get_codebase_map(proj["id"])
     if file:
         if file not in cmap["by_file"]:
@@ -123,14 +156,15 @@ def codebase_map(project_path: str, file: Optional[str] = None):
     return cmap
 
 
-@app.get("/features")
+@protected.get("/features", tags=["Map"])
 def features(project_path: str):
     proj = db.get_project(project_path)
-    if not proj: raise HTTPException(404, "Not registered")
+    if not proj:
+        raise HTTPException(404, "Not registered")
     return {"features": db.get_features(proj["id"])}
 
 
-@app.get("/evolution")
+@protected.get("/evolution", tags=["Intent"])
 def evolution_timeline(project_path: str, limit: int = 200):
     """Recorded function changes across the project, newest first."""
     proj = db.get_project(project_path)
@@ -140,13 +174,15 @@ def evolution_timeline(project_path: str, limit: int = 200):
     return {"entries": entries}
 
 
-@app.get("/function")
+@protected.get("/function", tags=["Intent"])
 def explain(project_path: str, function_name: str, file: str = ""):
     proj = db.get_project(project_path)
-    if not proj: raise HTTPException(404, "Not registered")
+    if not proj:
+        raise HTTPException(404, "Not registered")
     fn = db.get_function(proj["id"], function_name, file or None)
-    if not fn: raise HTTPException(404, f"Function '{function_name}' not found")
-    intents   = db.get_intents(fn["id"])
+    if not fn:
+        raise HTTPException(404, f"Function '{function_name}' not found")
+    intents = db.get_intents(fn["id"])
     decisions = db.get_decisions(fn["id"])
     evolution = db.get_evolution(fn["id"])
     for row in intents:
@@ -155,7 +191,7 @@ def explain(project_path: str, function_name: str, file: str = ""):
     return {**dict(fn), "intents": intents, "decisions": decisions, "evolution": evolution}
 
 
-@app.post("/search")
+@protected.post("/search", tags=["Search"])
 def search(req: SearchReq):
     proj = db.get_project(req.project_path)
     if not proj:
@@ -165,7 +201,10 @@ def search(req: SearchReq):
     if mode == "semantic":
         results, available = emb.semantic_search(proj["id"], req.query, limit=req.limit)
         if not available:
-            raise HTTPException(422, "sentence-transformers not installed. Run: pip install sentence-transformers numpy")
+            raise HTTPException(
+                422,
+                "sentence-transformers not installed. Run: pip install sentence-transformers numpy",
+            )
         mode_used = "semantic"
     elif mode == "hybrid":
         results, mode_used = emb.hybrid_search(
@@ -178,7 +217,7 @@ def search(req: SearchReq):
     return {"query": req.query, "mode": mode_used, "results": results}
 
 
-@app.post("/embed", status_code=202)
+@protected.post("/embed", status_code=202, tags=["Search"])
 def embed_intents(project_path: str, background_tasks: BackgroundTasks, model: str = emb.DEFAULT_MODEL):
     """Start embedding in the background. Returns a job_id to poll with GET /embed/{job_id}."""
     proj = db.get_project(project_path)
@@ -198,7 +237,7 @@ def embed_intents(project_path: str, background_tasks: BackgroundTasks, model: s
     return {"job_id": job_id, "status": "running"}
 
 
-@app.get("/embed/{job_id}")
+@protected.get("/embed/{job_id}", tags=["Search"])
 def embed_status(job_id: str):
     """Poll the status of a background embed job."""
     job = _embed_jobs.get(job_id)
@@ -207,10 +246,11 @@ def embed_status(job_id: str):
     return job
 
 
-@app.get("/stats")
+@protected.get("/stats", tags=["Map"])
 def stats(project_path: str):
     proj = db.get_project(project_path)
-    if not proj: raise HTTPException(404, "Not registered")
+    if not proj:
+        raise HTTPException(404, "Not registered")
     cmap = db.get_codebase_map(proj["id"])
     total = cmap["total_functions"]
     annotated = cmap["annotated"]
@@ -226,62 +266,56 @@ def stats(project_path: str):
     }
 
 
-@app.get("/graph")
+@protected.get("/graph", tags=["Map"])
 def intent_graph(project_path: str):
     """ReactFlow nodes + edges coloured by annotation status and feature."""
     proj = db.get_project(project_path)
-    if not proj: raise HTTPException(404, "Not registered")
+    if not proj:
+        raise HTTPException(404, "Not registered")
 
     cmap = db.get_codebase_map(proj["id"])
-    features = {f["title"]: i for i, f in enumerate(cmap["features"])}
-
-    FEATURE_PALETTE = [
-        "#388bfd","#3fb950","#d29922","#bc8cff","#39d353",
-        "#f0883e","#58a6ff","#f85149","#79c0ff","#56d364",
-    ]
 
     nodes, edges = [], []
-    fn_index: dict[str, int] = {}
     i = 0
 
     for file, fns in cmap["by_file"].items():
         for fn in fns:
             node_id = fn["qualname"]
-            fn_index[fn["qualname"]] = i
 
-            # figure out feature colour
             intent = fn.get("intent")
             color = "#484f58"  # unannotated
             if intent:
                 color = "#3fb950"  # annotated but no feature
 
-            nodes.append({
-                "id": node_id,
-                "type": "intentNode",
-                "data": {
-                    "label":        fn["name"],
-                    "qualname":     fn["qualname"],
-                    "file":         fn["file"],
-                    "has_intent":   fn["has_intent"],
-                    "exists_because": intent["user_request"] if intent else None,
-                    "confidence":   intent["confidence"] if intent else None,
-                    "color":        color,
-                },
-                "position": {"x": (i % 6) * 280, "y": (i // 6) * 130},
-            })
+            nodes.append(
+                {
+                    "id": node_id,
+                    "type": "intentNode",
+                    "data": {
+                        "label": fn["name"],
+                        "qualname": fn["qualname"],
+                        "file": fn["file"],
+                        "has_intent": fn["has_intent"],
+                        "exists_because": intent["user_request"] if intent else None,
+                        "confidence": intent["confidence"] if intent else None,
+                        "color": color,
+                    },
+                    "position": {"x": (i % 6) * 280, "y": (i // 6) * 130},
+                }
+            )
             i += 1
-
-    seen_edges = set()
-    for file, fns in cmap["by_file"].items():
-        pass  # call graph edges would come from extractor — omitted to keep response lean
 
     return {"nodes": nodes, "edges": edges}
 
 
-# serve built UI
+app.include_router(public)
+app.include_router(protected)
+
+# serve built UI (no API key — browser loads shell + assets without custom headers)
 UI_DIST = Path(__file__).parent.parent / "ui" / "dist"
 if UI_DIST.exists():
     app.mount("/assets", StaticFiles(directory=UI_DIST / "assets"), name="assets")
-    @app.get("/{full_path:path}")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
     def serve_ui(full_path: str):
         return FileResponse(UI_DIST / "index.html")

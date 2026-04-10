@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { apiFetch } from '../api.js'
 import s from './IntentMap.module.css'
 
 export default function IntentMap({ projectPath, selected, onSelect }) {
@@ -7,7 +8,7 @@ export default function IntentMap({ projectPath, selected, onSelect }) {
   const [search, setSearch] = useState('')
 
   useEffect(() => {
-    fetch(`/map?project_path=${encodeURIComponent(projectPath)}`)
+    apiFetch(`/map?project_path=${encodeURIComponent(projectPath)}`)
       .then(r => r.json()).then(setMap)
   }, [projectPath])
 

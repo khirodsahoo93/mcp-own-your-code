@@ -11,5 +11,4 @@ owns.db
 ui/node_modules
 .env
 .env.*
-TODO.md
 tests

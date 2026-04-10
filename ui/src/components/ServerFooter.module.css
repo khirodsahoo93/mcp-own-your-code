@@ -1,0 +1,80 @@
+.footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  background: var(--bg2);
+  padding: 6px 14px 8px;
+  font-size: 11px;
+}
+.row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.muted {
+  color: var(--text3);
+  margin-right: 2px;
+}
+.chip {
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--bg1);
+  color: var(--text2);
+  border: 1px solid var(--border);
+}
+.chip.ok {
+  border-color: #238636;
+  color: #3fb950;
+}
+.chip.warn {
+  border-color: #6e7681;
+  color: var(--text3);
+}
+.link {
+  color: var(--blue);
+  text-decoration: none;
+}
+.link:hover {
+  text-decoration: underline;
+}
+.keyBtn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text2);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  cursor: pointer;
+}
+.keyBtn:hover {
+  color: var(--text);
+  border-color: var(--text3);
+}
+.keyRow {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  align-items: center;
+}
+.keyInput {
+  flex: 1;
+  min-width: 120px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg1);
+  color: var(--text);
+  font-size: 12px;
+}
+.saveBtn {
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: none;
+  background: var(--blue);
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+}
+.err {
+  color: #f85149;
+}

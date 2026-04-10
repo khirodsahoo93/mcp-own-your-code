@@ -7,6 +7,8 @@ import SearchView from './components/SearchView.jsx'
 import EvolutionTimeline from './components/EvolutionTimeline.jsx'
 import ProjectInsights from './components/ProjectInsights.jsx'
 import CoverageBar from './components/CoverageBar.jsx'
+import ServerFooter from './components/ServerFooter.jsx'
+import { apiFetch } from './api.js'
 import s from './App.module.css'
 
 const TABS = ['Intent Map', 'Features', 'Search', 'Timeline']
@@ -17,14 +19,13 @@ export default function App() {
   const [map, setMap] = useState(null)
   const [activeTab, setActiveTab] = useState('Intent Map')
   const [selectedFn, setSelectedFn] = useState(null)
-
   const loadStats = useCallback(async (path) => {
-    const r = await fetch(`/stats?project_path=${encodeURIComponent(path)}`)
+    const r = await apiFetch(`/stats?project_path=${encodeURIComponent(path)}`)
     if (r.ok) setStats(await r.json())
   }, [])
 
   const loadMap = useCallback(async (path) => {
-    const r = await fetch(`/map?project_path=${encodeURIComponent(path)}`)
+    const r = await apiFetch(`/map?project_path=${encodeURIComponent(path)}`)
     if (r.ok) setMap(await r.json())
   }, [])
 
@@ -130,6 +131,15 @@ export default function App() {
           </>
         )}
       </div>
+
+      <ServerFooter
+        onApiKeySaved={() => {
+          if (project) {
+            loadStats(project.path)
+            loadMap(project.path)
+          }
+        }}
+      />
     </div>
   )
 }

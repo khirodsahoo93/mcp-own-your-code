@@ -35,6 +35,11 @@ def _deps_available() -> bool:
         return False
 
 
+def embedding_stack_available() -> bool:
+    """True if sentence-transformers and numpy are installed (semantic / hybrid search)."""
+    return _deps_available()
+
+
 def get_model(model_name: str = DEFAULT_MODEL):
     """Load (and cache) a SentenceTransformer model. Returns None if deps missing."""
     if not _deps_available():

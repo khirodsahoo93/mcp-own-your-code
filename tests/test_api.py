@@ -244,7 +244,7 @@ def test_auth_rejects_missing_key(monkeypatch, tmp_path):
     import importlib, api.main as api_mod
     importlib.reload(api_mod)
     c = TestClient(api_mod.app)
-    r = c.get("/health")
+    r = c.get("/projects")
     assert r.status_code == 401
 
 
@@ -262,5 +262,24 @@ def test_auth_rejects_wrong_key(monkeypatch, tmp_path):
     import importlib, api.main as api_mod
     importlib.reload(api_mod)
     c = TestClient(api_mod.app)
-    r = c.get("/health", headers={"X-Api-Key": "wrongkey"})
+    r = c.get("/projects", headers={"X-Api-Key": "wrongkey"})
     assert r.status_code == 401
+
+
+def test_server_info_public_when_auth_required(monkeypatch, tmp_path):
+    """UI can read /server-info without a key even when API routes are protected."""
+    monkeypatch.setenv("OWN_YOUR_CODE_API_KEY", "secret123")
+    import importlib, api.main as api_mod
+    importlib.reload(api_mod)
+    c = TestClient(api_mod.app)
+    r = c.get("/server-info")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["api_auth_required"] is True
+    assert "semantic_stack_installed" in body
+
+
+def test_server_info_when_auth_disabled(client):
+    r = client.get("/server-info")
+    assert r.status_code == 200
+    assert r.json()["api_auth_required"] is False

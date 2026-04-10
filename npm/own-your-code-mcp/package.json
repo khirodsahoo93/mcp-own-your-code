@@ -1,6 +1,6 @@
 {
   "name": "own-your-code-mcp",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "npm entrypoint for Own Your Code — ensures the Python package is installed and runs the installer or MCP shim",
   "license": "MIT",
   "repository": {

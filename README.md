@@ -1,97 +1,175 @@
 # Own Your Code
 
-**A living intent ledger for your codebase.**
+<p align="center">
+  <strong>A living intent ledger for your codebase.</strong><br/>
+  <sub>Capture the <em>why</em> behind every function — via MCP — and explore it in a browser or over REST.</sub>
+</p>
 
-Own Your Code captures the *why* behind every function — user requests, tradeoffs, decisions, and evolution — recorded via MCP as you work. Search by keyword or semantic similarity. Browse in a React UI or query the MCP server directly.
-
----
-
-## The problem
-
-Code is easy to read. It's impossible to understand.
-
-You can read `hybrid_search()` in 5 minutes and know what it does. You can't know:
-- Why cosine similarity instead of BM25?
-- Was keyword-only search tried and rejected?
-- What user request triggered this function?
-- How did it behave before the last refactor?
-
-That context lives in someone's head, a Slack thread, or nowhere.
-
-**Own Your Code captures it at the moment it's created — while you’re implementing the change.**
+<p align="center">
+  <a href="https://pypi.org/project/own-your-code/"><img src="https://img.shields.io/pypi/v/own-your-code.svg?label=pypi" alt="PyPI" /></a>
+  <img src="https://img.shields.io/badge/python-3.11%2B-3776AB?logo=python&logoColor=white" alt="Python 3.11+" />
+  <img src="https://img.shields.io/badge/license-MIT-97ca00" alt="License MIT" />
+  <a href="https://github.com/khirodsahoo93/mcp-own-your-code"><img src="https://img.shields.io/badge/source-GitHub-181717?logo=github" alt="GitHub" /></a>
+</p>
 
 ---
 
-## Features
+### Documentation map
 
-- **Intent recording** — `record_intent` captures user request, reasoning, implementation notes, and confidence (typically from your MCP workflow).
-- **Decision log** — tradeoffs, alternatives considered, constraints that forced a choice.
-- **Evolution timeline** — every behavioral change with the reason and triggering request.
-- **Multi-language AST indexing** — Python, TypeScript, JavaScript, Go. Pluggable extractor architecture.
-- **Semantic search** — vector embeddings via `sentence-transformers`. Find `charge_card` by searching "what handles payments?".
-- **Hybrid search** — merges keyword rank + semantic cosine score with tunable weight.
-- **React UI** — Intent Map, Feature clusters, Search tab (keyword/semantic/hybrid), coverage bar, function detail panel.
-- **MCP server** — works with any host that supports the Model Context Protocol.
-- **FastAPI REST backend** — full API, suitable for team deployment.
-- **Production-ready** — API key auth, SQLite WAL mode, configurable CORS, background embed jobs, 47 tests.
+| Doc | Who it’s for |
+|-----|----------------|
+| **This README** | Install, configure, CLI, API, deploy — start here |
+| [docs/USER-GUIDE.md](docs/USER-GUIDE.md) | Plain-language tour: pip, MCP, FastAPI, UI, mental models |
+| [AGENTS.md](AGENTS.md) | **For MCP / AI assistants** — when to call `record_intent`, `record_evolution`, etc. (not maintainer-only) |
+| [docs/CODING-PRACTICES.md](docs/CODING-PRACTICES.md) | Contributing and code conventions |
+| [templates/PROJECT-INTENT.md](templates/PROJECT-INTENT.md) | Drop into repos so every session knows your expectations |
 
 ---
 
-## Quick start
+### Table of contents
 
-### 1. Install (pick one)
+1. [What you get](#what-you-get)
+2. [Architecture (at a glance)](#architecture-at-a-glance)
+3. [Requirements](#requirements)
+4. [Quick start in five steps](#quick-start-in-five-steps)
+5. [Install (all options)](#install-all-options)
+6. [MCP host configuration](#mcp-host-configuration)
+7. [Terminal CLI](#terminal-cli)
+8. [Web UI and API](#web-ui-and-api)
+9. [MCP tools](#mcp-tools)
+10. [REST API](#rest-api)
+11. [Search modes](#search-modes)
+12. [Optional extras (semantic, multi-language)](#optional-extras-semantic-multi-language)
+13. [Post-write hook](#post-write-hook)
+14. [Production deployment](#production-deployment)
+15. [Development](#development)
+16. [Database schema](#database-schema)
+17. [Publishing (maintainers)](#publishing-maintainers)
+18. [License](#license)
 
-**PyPI (after you publish, or use TestPyPI):**
+---
+
+## What you get
+
+- **Intent** — User request, reasoning, implementation notes, confidence (`record_intent`).
+- **Decisions** — Tradeoffs and alternatives you considered.
+- **Evolution** — Timeline of behavioral changes (`record_evolution`).
+- **Indexing** — Python, TypeScript, JavaScript, Go (pluggable extractors).
+- **Search** — Keyword, semantic (embeddings), or hybrid.
+- **Surfaces** — MCP (agents), **FastAPI + React UI** (humans), **CLI** (scripts, CI).
+
+> **New to packaging or MCP?** Read [docs/USER-GUIDE.md](docs/USER-GUIDE.md) after skimming the steps below.
+
+---
+
+## Architecture (at a glance)
+
+```mermaid
+flowchart LR
+  subgraph agents["AI / MCP"]
+    Host[Cursor, Claude, …]
+  end
+  subgraph oyc["Own Your Code"]
+    MCP[own-your-code-mcp]
+    API[FastAPI api.main]
+    UI[React UI]
+  end
+  DB[(SQLite)]
+  Host --> MCP
+  MCP --> DB
+  UI --> API
+  API --> DB
+```
+
+- **MCP** and **REST** share the same database (path from `OWN_YOUR_CODE_DB` or default `owns.db` in the server working directory).
+
+---
+
+## Requirements
+
+- **Python 3.11+** (3.11, 3.12, 3.13 supported in CI).
+- **Node.js** only if you build or develop the UI (`ui/`).
+
+---
+
+## Quick start in five steps
+
+| Step | Action |
+|:----:|--------|
+| 1 | [Install](#install-all-options) the package (`pipx` / `pip` / source) so `own-your-code-mcp` is on your PATH. |
+| 2 | Run `own-your-code install` (or merge JSON manually) — see [MCP host configuration](#mcp-host-configuration). |
+| 3 | Restart your editor and call **`register_project`** with the absolute path to your repo. |
+| 4 | While coding, use **`record_intent`** (and **`record_evolution`** when behavior changes). See [AGENTS.md](AGENTS.md). |
+| 5 | Optional: run the [Web UI](#web-ui-and-api) to browse coverage, search, and timelines. |
+
+---
+
+## Install (all options)
+
+### PyPI (recommended for end users)
 
 ```bash
-pipx install own-your-code # recommended — puts own-your-code-mcp on PATH
-own-your-code install               # merges MCP config (see platform IDs below)
+pipx install own-your-code
+own-your-code install
 ```
+
+Or with `pip`:
 
 ```bash
 python3 -m pip install own-your-code
 own-your-code install --platform editor-a
-own-your-code install --platform editor-b
 ```
 
-**npm (wrapper — still requires Python 3.11+ on PATH):**
+`install` merges the MCP server block into known config files. **Platform IDs:**
+
+| ID | Typical host |
+|----|----------------|
+| `editor-a` | Cursor (`~/.cursor/mcp.json`) |
+| `editor-b` | Claude Desktop |
+| `editor-c` | Windsurf / Codeium |
+| `all` | Every location above |
+
+Repeat `--platform` or use `all`. Inspect what would change: `own-your-code install --dry-run`.
+
+### npm wrapper (still needs Python 3.11+)
 
 ```bash
 npx own-your-code-mcp install
 ```
 
-This runs `pip install -U own-your-code` if needed, then the same `own-your-code install` as above. Publish the shim from `npm/own-your-code-mcp/` to the npm registry when you are ready.
+This ensures the Python package is installed, then runs the same `own-your-code install`. Prefer **`own-your-code-mcp` on PATH** for day-to-day MCP (lower latency than a Node shim).
 
-Use **`own-your-code-mcp` on PATH** (pipx/pip) for the actual MCP stdio server. The npm package is mainly so people who live in Node can run **`npx … install`** without memorizing pip; running MCP through `npx` is possible (`bin/mcp-shim.cjs`) but adds latency — prefer the Python binary when you can.
-
-**From source:**
+### From source
 
 ```bash
 git clone https://github.com/khirodsahoo93/mcp-own-your-code
 cd mcp-own-your-code
-python -m venv .venv && source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e .
 
-# With semantic search support
-pip install -e ".[semantic]"
-
-# With multi-language AST support (TypeScript, Go)
-pip install -e ".[full]"
+# Optional capability bundles:
+pip install -e ".[semantic]"   # embeddings + semantic/hybrid search
+pip install -e ".[full]"       # semantic + tree-sitter TS/JS/Go
+pip install -e ".[dev,full]"  # + pytest, ruff (contributors)
 ```
 
-Manual JSON fragment (if you skip `install`):
+### Manual MCP JSON (skip `install`)
 
 ```bash
 own-your-code print-config
 ```
 
-**uv users:** if `own-your-code-mcp` is not on PATH but `uvx` is, `own-your-code install` writes a block that runs `uvx --from own-your-code own-your-code-mcp` (once the package is on PyPI).
+If `own-your-code-mcp` is missing but **`uvx`** exists, `install` may write `uvx --from own-your-code own-your-code-mcp` (package must exist on PyPI).
 
-**`own-your-code install --platform` IDs** — each maps to a known config location on disk (see `src/cli.py` for exact paths). Use `all` to update every configured location.
+---
 
-### 2. Add to your MCP host
+## MCP host configuration
 
-After `own-your-code install`, restart the editor. To configure by hand from a git checkout:
+**After `own-your-code install`, restart the editor.**
+
+The repo includes **[mcp.example.json](mcp.example.json)** as a minimal `mcpServers` fragment you can copy or diff against `own-your-code print-config`.
+
+**From a git checkout** (example — adjust paths):
 
 ```json
 {
@@ -105,49 +183,91 @@ After `own-your-code install`, restart the editor. To configure by hand from a g
 }
 ```
 
-Or if installed as a package:
+**When installed as a package:**
 
 ```json
 {
   "mcpServers": {
     "own-your-code": {
-      "command": "own-your-code-mcp"
+      "command": "own-your-code-mcp",
+      "args": [],
+      "env": {}
     }
   }
 }
 ```
 
-### 3. Register your project
-
-From your MCP client:
+Then in your MCP client, register and record intent (examples are illustrative; use your host’s tool UI):
 
 ```
-register_project path="/path/to/your/project"
+register_project path="/absolute/path/to/your/project"
 ```
-
-This scans all Python, TypeScript, JavaScript, and Go files and indexes every function.
-
-### 4. Start building
-
-As you write code, use `record_intent` from MCP (manually or via your host’s automation):
 
 ```
 record_intent
-  project_path="/path/to/your/project"
+  project_path="/absolute/path/to/your/project"
   file="src/auth.py"
   function_name="verify_token"
   user_request="Add JWT verification so the API rejects unsigned requests"
-  reasoning="Using PyJWT with RS256. Chose asymmetric keys so the public key can be distributed to services without exposing the signing key."
-  decisions=[{"decision": "RS256 over HS256", "reason": "Asymmetric — services can verify without the secret", "alternatives": ["HS256"]}]
+  reasoning="PyJWT + RS256; asymmetric keys for verify-only services."
 ```
 
-### 5. Open the UI
+---
+
+## Terminal CLI
+
+Same SQLite database as MCP. No editor required.
+
+| Command | Purpose |
+|---------|---------|
+| `own-your-code --help` | All subcommands |
+| `own-your-code install` | Merge MCP config into host JSON files |
+| `own-your-code print-config` | Print `mcpServers` fragment |
+| `own-your-code status` | DB path, registered projects (or stats for one path) |
+| `own-your-code update PATH` | Scan/index a project (like `register_project`) |
+| `own-your-code visualize --project-path P --out report.html` | Standalone HTML intent report |
+| `own-your-code watch --project-path P` | Print coverage stats on an interval |
+
+Use `OWN_YOUR_CODE_DB` to point at a specific database file.
+
+---
+
+## Web UI and API
+
+### Run the server
+
+From the **repository root** (where `api/` and `pyproject.toml` live):
 
 ```bash
-uvicorn api.main:app --reload --port 8002
+pip install -e . # or ensure fastapi + uvicorn are available
+cd ui && npm ci && npm run build && cd ..   # first time: build static UI
+uvicorn api.main:app --reload --host 127.0.0.1 --port 8002
 ```
 
-Open [http://localhost:8002](http://localhost:8002).
+Open **http://127.0.0.1:8002** — FastAPI serves **`ui/dist`** when present.
+
+**Vite dev** (hot reload UI, API still on 8002):
+
+```bash
+# terminal 1
+uvicorn api.main:app --reload --port 8002
+# terminal 2
+cd ui && npm install && npm run dev
+```
+
+Dev server: **http://localhost:5175** (proxies API routes to 8002).
+
+### Using the UI
+
+1. In the header, enter the **absolute path** to your project and click **Register** (or pick a saved project).
+2. Explore **Intent Map**, **Features**, **Search**, **Timeline**; open **Swagger** / **ReDoc** from the footer.
+3. If **`OWN_YOUR_CODE_API_KEY`** is set on the server, use **API key…** in the footer so the browser sends `X-Api-Key` on data requests. **`/health`** and **`/server-info`** stay public.
+
+### API docs
+
+- **Swagger:** `http://127.0.0.1:8002/docs`
+- **ReDoc:** `http://127.0.0.1:8002/redoc`
+- **Server metadata:** `GET /server-info` (version, semantic deps, whether auth is enabled)
 
 ---
 
@@ -155,69 +275,67 @@ Open [http://localhost:8002](http://localhost:8002).
 
 | Tool | Description |
 |------|-------------|
-| `register_project` | Scan and index a codebase (Python, TypeScript, JavaScript, Go) |
-| `record_intent` | Record why a function exists — user request, reasoning, decisions |
-| `record_evolution` | Log a behavioral change with the reason it happened |
-| `explain_function` | Get the full story: intent, decisions, evolution timeline |
-| `find_by_intent` | Search by keyword, semantic similarity, or hybrid |
-| `embed_intents` | Backfill vector embeddings for semantic search |
-| `get_codebase_map` | Full structured map: coverage, hook backlog, functions by file |
-| `get_evolution` | Timeline of changes for a specific function |
-| `annotate_existing` | Retroactively infer intents on a legacy codebase |
-| `mark_file_reviewed` | Clear hook backlog for a file without adding intent |
+| `register_project` | Scan and index a codebase |
+| `record_intent` | Record why a function exists |
+| `record_evolution` | Log a behavioral change |
+| `explain_function` | Intent, decisions, evolution for one function |
+| `find_by_intent` | Keyword / semantic / hybrid search |
+| `embed_intents` | Backfill embeddings for semantic search |
+| `get_codebase_map` | Map, coverage, hook backlog |
+| `get_evolution` | Evolution entries for one function |
+| `annotate_existing` | Retrofit intents on legacy code |
+| `mark_file_reviewed` | Clear hook backlog without new intent |
 
 ---
 
 ## REST API
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/health` | Health check |
-| `GET` | `/projects` | List registered projects |
-| `POST` | `/register` | Register and index a project |
-| `GET` | `/map` | Full codebase map (supports `?file=` filter) |
-| `GET` | `/function` | Intent, decisions, evolution for one function |
-| `POST` | `/search` | Search intents (keyword / semantic / hybrid) |
-| `POST` | `/embed` | Start background embedding job (returns `job_id`) |
-| `GET` | `/embed/{job_id}` | Poll embedding job status |
-| `GET` | `/stats` | Coverage and hook backlog summary |
-| `GET` | `/features` | Feature clusters |
-| `GET` | `/graph` | ReactFlow-compatible node graph |
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/health` | Health (public) |
+| `GET` | `/server-info` | Version & capability flags (public) |
+| `GET` | `/projects` | List projects |
+| `POST` | `/register` | Register + index |
+| `GET` | `/map` | Codebase map (`?file=` optional) |
+| `GET` | `/function` | One function’s intent stack |
+| `POST` | `/search` | Keyword / semantic / hybrid |
+| `POST` | `/embed` | Start embed job |
+| `GET` | `/embed/{job_id}` | Job status |
+| `GET` | `/stats` | Coverage + backlog |
+| `GET` | `/features` | Features |
+| `GET` | `/evolution` | Project evolution timeline |
+| `GET` | `/graph` | Graph payload for ReactFlow-style UIs |
+
+Example:
+
+```bash
+curl -s -X POST http://127.0.0.1:8002/search \
+  -H "Content-Type: application/json" \
+  -d '{"project_path":"/path/to/repo","query":"payments","mode":"hybrid"}'
+```
 
 ---
 
 ## Search modes
 
-```bash
-# Keyword — fast LIKE search over intent text
-find_by_intent project_path="..." query="authentication" mode="keyword"
-
-# Semantic — vector cosine similarity (run embed_intents first)
-find_by_intent project_path="..." query="what handles retries?" mode="semantic"
-
-# Hybrid — merges keyword rank + semantic score
-find_by_intent project_path="..." query="payment processing" mode="hybrid" semantic_weight=0.6
-```
-
-Via REST:
-
-```bash
-curl -X POST http://localhost:8002/search \
-  -H "Content-Type: application/json" \
-  -d '{"project_path": "/my/project", "query": "what handles payments?", "mode": "hybrid"}'
-```
+| Mode | When to use |
+|------|-------------|
+| **keyword** | Fast substring search over intent text |
+| **semantic** | Natural-language similarity (run **`embed_intents`** / UI “Index embeddings” first) |
+| **hybrid** | Blend keyword ranking + semantic score (`semantic_weight` tunable) |
 
 ---
 
-## Multi-language support
+## Optional extras (semantic, multi-language)
 
-| Language | Parser | Fallback |
-|----------|--------|---------|
-| Python | `ast` (stdlib) | — |
-| TypeScript / JavaScript | `tree-sitter-javascript` | regex |
-| Go | `tree-sitter-go` | regex |
+| Extra | Install | Enables |
+|-------|---------|---------|
+| `semantic` | `pip install "own-your-code[semantic]"` | `sentence-transformers`, numpy, vector search |
+| `multilang` | `pip install "own-your-code[multilang]"` | tree-sitter parsers for TS/JS/Go |
+| `full` | `pip install "own-your-code[full]"` | Both of the above |
+| `dev` | `pip install "own-your-code[dev]"` | pytest, httpx, ruff |
 
-Configure indexing:
+Register with filters (REST body or MCP args as supported):
 
 ```json
 {
@@ -228,18 +346,38 @@ Configure indexing:
 }
 ```
 
+| Language | Parser | Notes |
+|----------|--------|--------|
+| Python | `ast` | Always available |
+| TypeScript / JavaScript | tree-sitter (optional) | Regex fallback without extra |
+| Go | tree-sitter (optional) | Regex fallback without extra |
+
+---
+
+## Post-write hook
+
+Tracks edited files so **`get_codebase_map`** can show a **hook backlog** until you **`record_intent`** or **`mark_file_reviewed`**.
+
+```bash
+cp hooks/post_write.py .git/hooks/post-write && chmod +x .git/hooks/post-write
+# or, if installed:
+own-your-code-hook
+```
+
+Wire the hook to your editor’s “after save” hook path as needed.
+
 ---
 
 ## Production deployment
 
 ### Environment variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `OWN_YOUR_CODE_DB` | `owns.db` | Path to SQLite file |
-| `OWN_YOUR_CODE_API_KEY` | *(unset)* | Require `X-Api-Key` header. Leave unset for local use. |
-| `OWN_YOUR_CODE_CORS_ORIGINS` | `*` | Comma-separated allowed origins |
-| `OWN_YOUR_CODE_EMBED_MODEL` | `all-MiniLM-L6-v2` | Sentence-transformers model name |
+| Variable | Default | Meaning |
+|----------|---------|---------|
+| `OWN_YOUR_CODE_DB` | `owns.db` | SQLite path |
+| `OWN_YOUR_CODE_API_KEY` | *(unset)* | Require `X-Api-Key` on data routes; SPA shell + `/assets` + `/health` + `/server-info` stay public |
+| `OWN_YOUR_CODE_CORS_ORIGINS` | `*` | Comma-separated origins |
+| `OWN_YOUR_CODE_EMBED_MODEL` | `all-MiniLM-L6-v2` | Embedding model name |
 
 ### Docker
 
@@ -247,109 +385,71 @@ Configure indexing:
 docker compose up
 ```
 
-Or standalone:
+Or:
 
 ```bash
 docker build -t own-your-code .
 docker run -p 8002:8002 \
   -e OWN_YOUR_CODE_API_KEY=your-secret \
   -e OWN_YOUR_CODE_CORS_ORIGINS=https://yourapp.com \
-  -v $(pwd)/data:/data \
+  -v "$(pwd)/data:/data" \
   -e OWN_YOUR_CODE_DB=/data/owns.db \
   own-your-code
 ```
 
 ### Render / Fly.io
 
-A `render.yaml` is included. Set `OWN_YOUR_CODE_API_KEY` and `OWN_YOUR_CODE_DB` as environment variables in your deployment dashboard.
-
----
-
-## Post-write hook
-
-The post-write hook fires when your editor saves a file and records it in the backlog. Any file written without a subsequent `record_intent` appears in `get_codebase_map` as pending.
-
-```bash
-# Install the hook script for non-pip use
-cp hooks/post_write.py .git/hooks/post-write && chmod +x .git/hooks/post-write
-
-# Or use the installed entry point
-own-your-code-hook
-```
+A `render.yaml` is included. Set `OWN_YOUR_CODE_API_KEY` and `OWN_YOUR_CODE_DB` in the provider dashboard.
 
 ---
 
 ## Development
 
+See [docs/CODING-PRACTICES.md](docs/CODING-PRACTICES.md).
+
 ```bash
-# Install dev dependencies
 pip install -e ".[dev,full]"
-
-# Run tests
 pytest
-
-# Lint
 ruff check src/ api/ tests/
-
-# Build UI
-cd ui && npm install && npm run build
+cd ui && npm ci && npm run build
 ```
 
 CI runs on Python 3.11, 3.12, and 3.13.
 
 ---
 
-## Schema
+## Database schema
 
-SQLite. Tables:
+SQLite tables (version via `PRAGMA user_version`; migrations are additive-safe):
 
-| Table | Purpose |
-|-------|---------|
-| `projects` | Registered codebase roots |
-| `functions` | Every known function (AST-extracted) |
-| `intents` | Why a function exists — user request, reasoning, confidence |
-| `intent_embeddings` | Vector blobs for semantic search (schema v2) |
-| `decisions` | Tradeoffs and alternatives considered |
-| `evolution` | Timeline of behavioral changes |
-| `features` | High-level feature labels |
-| `feature_links` | Many-to-many: functions ↔ features |
-| `hook_events` | Files written by editor but not yet annotated |
-
-Schema version tracked via `PRAGMA user_version`. Migrations are safe to run on existing databases.
+| Table | Role |
+|-------|------|
+| `projects` | Registered roots |
+| `functions` | Extracted functions |
+| `intents` | Why a function exists |
+| `intent_embeddings` | Vectors for semantic search |
+| `decisions` | Tradeoffs |
+| `evolution` | Change history |
+| `features` / `feature_links` | Feature grouping |
+| `hook_events` | Post-write backlog |
 
 ---
 
 ## Publishing (maintainers)
 
-### One-time setup
+1. **PyPI** — Project `own-your-code` on [pypi.org](https://pypi.org); trusted publisher for this repo + `.github/workflows/release.yml` ([docs](https://docs.pypi.org/trusted-publishers/)).
+2. **npm** — `npm login` or GitHub secret **`NPM_TOKEN`** for `npm/own-your-code-mcp`.
 
-1. **PyPI** — Create the project `own-your-code` on [pypi.org](https://pypi.org). Under **Manage → Publishing**, add a **trusted publisher** for this GitHub repo and workflow **`.github/workflows/release.yml`** (see [PyPI docs](https://docs.pypi.org/trusted-publishers/)).
-2. **npm** — Log in locally (`npm login`) once, or create a granular **Automation** token and add it as the GitHub secret **`NPM_TOKEN`** for this repository.
-
-### Automated (recommended)
-
-Push a **semver tag** after bumping `version` in `pyproject.toml` and `npm/own-your-code-mcp/package.json`:
+**Release:** bump `version` in `pyproject.toml` and `npm/own-your-code-mcp/package.json`, then tag:
 
 ```bash
-# bump versions first, commit, then:
 git tag v0.1.0
 git push origin main && git push origin v0.1.0
 ```
 
-GitHub Actions **Release** workflow uploads the wheel + sdist to **PyPI** and publishes **`own-your-code-mcp`** to npm.
+**Manual PyPI / npm:** use `python -m build` + `twine upload`, and `npm publish` from `npm/own-your-code-mcp`.
 
-### Manual
-
-```bash
-python3 -m pip install build twine
-python3 -m build
-TWINE_USERNAME=__token__ TWINE_PASSWORD=pypi-YOUR_PYPI_API_TOKEN python3 -m twine upload dist/*
-```
-
-```bash
-cd npm/own-your-code-mcp
-npm publish --access public
-```
+---
 
 ## License
 

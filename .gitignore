@@ -24,3 +24,7 @@ ui/dist/
 .DS_Store
 .env
 .env.*
+
+# Local tooling / generated (do not ship in git)
+.cursor/
+.code-review-graph/

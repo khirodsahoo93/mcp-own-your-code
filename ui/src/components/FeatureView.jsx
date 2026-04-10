@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { apiFetch } from '../api.js'
 import s from './FeatureView.module.css'
 
 export default function FeatureView({ projectPath, onSelect }) {
@@ -8,7 +9,7 @@ export default function FeatureView({ projectPath, onSelect }) {
 
   useEffect(() => {
     const q = new URLSearchParams({ project_path: projectPath })
-    fetch(`/features?${q}`)
+    apiFetch(`/features?${q}`)
       .then(async r => {
         if (!r.ok) throw new Error((await r.json().catch(() => ({}))).detail || r.statusText)
         return r.json()
