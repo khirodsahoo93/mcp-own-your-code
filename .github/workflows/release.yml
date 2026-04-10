@@ -50,21 +50,23 @@ jobs:
 
   npm:
     name: Publish npm shim
-    # Skip when secret is unset so PyPI-only releases still succeed.
-    if: secrets.NPM_TOKEN
+    # secrets.* is not allowed in job-level `if`; gate each step instead when NPM_TOKEN is unset.
     needs: pypi
     runs-on: ubuntu-latest
     # PyPI is the source of truth; npm is optional — don’t fail the whole run if npm rejects.
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
+        if: ${{ secrets.NPM_TOKEN != '' }}
 
       - uses: actions/setup-node@v4
+        if: ${{ secrets.NPM_TOKEN != '' }}
         with:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
 
       - name: npm publish
+        if: ${{ secrets.NPM_TOKEN != '' }}
         working-directory: npm/own-your-code-mcp
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
