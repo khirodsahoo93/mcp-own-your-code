@@ -1,0 +1,26 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local SQLite (set OWN_YOUR_CODE_DB in production)
+owns.db
+*.db-journal
+
+# Node / UI
+ui/node_modules/
+ui/dist/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+.env
+.env.*

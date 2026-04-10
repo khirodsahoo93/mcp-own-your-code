@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "own-your-code": {
+      "command": "own-your-code-mcp",
+      "args": [],
+      "env": {}
+    }
+  }
+}

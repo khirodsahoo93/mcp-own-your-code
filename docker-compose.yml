@@ -1,0 +1,13 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      PORT: "8000"
+      OWN_YOUR_CODE_DB: /data/owns.db
+    volumes:
+      - oyc-data:/data
+
+volumes:
+  oyc-data:

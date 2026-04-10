@@ -1,0 +1,19 @@
+.layout{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+.header{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:50px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;}
+.headerLeft{display:flex;align-items:baseline;gap:10px;}
+.logo{font-size:15px;font-weight:700;}
+.tagline{font-size:11px;color:var(--text3);}
+.body{display:flex;flex:1;overflow:hidden;}
+.sidebar{width:320px;display:flex;flex-direction:column;border-right:1px solid var(--border);background:var(--bg2);flex-shrink:0;overflow:hidden;}
+.tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;}
+.tab{flex:1;padding:10px 0;background:none;color:var(--text3);font-size:12px;font-weight:500;border-bottom:2px solid transparent;transition:color .15s;}
+.tab:hover{color:var(--text2);}
+.tabActive{color:var(--text);border-bottom-color:var(--blue);}
+.tabContent{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+.main{flex:1;overflow:hidden;}
+.mainEmpty{display:flex;align-items:center;justify-content:center;height:100%;}
+.splash{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:16px;}
+.splashIcon{font-size:56px;}
+.splashTitle{font-size:24px;font-weight:700;}
+.splashSub{font-size:14px;color:var(--text2);text-align:center;line-height:1.8;}
+.splashSteps{display:flex;flex-direction:column;gap:10px;margin-top:8px;}

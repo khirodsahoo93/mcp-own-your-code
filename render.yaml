@@ -1,0 +1,13 @@
+# https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: own-your-code
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    region: oregon
+    healthCheckPath: /health
+    disk:
+      name: oyc-sqlite
+      mountPath: /data
+      sizeGB: 1
