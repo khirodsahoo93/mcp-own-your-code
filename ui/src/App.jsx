@@ -4,34 +4,45 @@ import IntentMap from './components/IntentMap.jsx'
 import FeatureView from './components/FeatureView.jsx'
 import FunctionDetail from './components/FunctionDetail.jsx'
 import SearchView from './components/SearchView.jsx'
+import EvolutionTimeline from './components/EvolutionTimeline.jsx'
+import ProjectInsights from './components/ProjectInsights.jsx'
 import CoverageBar from './components/CoverageBar.jsx'
 import s from './App.module.css'
 
-const TABS = ['Intent Map', 'Features', 'Search']
+const TABS = ['Intent Map', 'Features', 'Search', 'Timeline']
 
 export default function App() {
-  const [project, setProject]       = useState(null)  // {path, name, ...}
-  const [stats, setStats]           = useState(null)
-  const [activeTab, setActiveTab]   = useState('Intent Map')
-  const [selectedFn, setSelectedFn] = useState(null)  // qualname
+  const [project, setProject] = useState(null)
+  const [stats, setStats] = useState(null)
+  const [map, setMap] = useState(null)
+  const [activeTab, setActiveTab] = useState('Intent Map')
+  const [selectedFn, setSelectedFn] = useState(null)
 
   const loadStats = useCallback(async (path) => {
     const r = await fetch(`/stats?project_path=${encodeURIComponent(path)}`)
     if (r.ok) setStats(await r.json())
   }, [])
 
+  const loadMap = useCallback(async (path) => {
+    const r = await fetch(`/map?project_path=${encodeURIComponent(path)}`)
+    if (r.ok) setMap(await r.json())
+  }, [])
+
   function onProjectLoaded(proj) {
     setProject(proj)
     setSelectedFn(null)
     loadStats(proj.path)
+    loadMap(proj.path)
   }
 
-  // poll stats every 15s so coverage and hook backlog stay fresh
   useEffect(() => {
     if (!project) return
-    const t = setInterval(() => loadStats(project.path), 15000)
+    const t = setInterval(() => {
+      loadStats(project.path)
+      loadMap(project.path)
+    }, 20000)
     return () => clearInterval(t)
-  }, [project, loadStats])
+  }, [project, loadStats, loadMap])
 
   return (
     <div className={s.layout}>
@@ -72,6 +83,7 @@ export default function App() {
         ) : (
           <>
             <aside className={s.sidebar}>
+              {map && <ProjectInsights map={map} onSelect={setSelectedFn} />}
               <div className={s.tabs}>
                 {TABS.map(t => (
                   <button
@@ -86,23 +98,16 @@ export default function App() {
 
               <div className={s.tabContent}>
                 {activeTab === 'Intent Map' && (
-                  <IntentMap
-                    projectPath={project.path}
-                    selected={selectedFn}
-                    onSelect={setSelectedFn}
-                  />
+                  <IntentMap projectPath={project.path} selected={selectedFn} onSelect={setSelectedFn} />
                 )}
                 {activeTab === 'Features' && (
-                  <FeatureView
-                    projectPath={project.path}
-                    onSelect={setSelectedFn}
-                  />
+                  <FeatureView projectPath={project.path} onSelect={setSelectedFn} />
                 )}
                 {activeTab === 'Search' && (
-                  <SearchView
-                    projectPath={project.path}
-                    onSelect={setSelectedFn}
-                  />
+                  <SearchView projectPath={project.path} onSelect={setSelectedFn} />
+                )}
+                {activeTab === 'Timeline' && (
+                  <EvolutionTimeline projectPath={project.path} onSelect={setSelectedFn} />
                 )}
               </div>
             </aside>
@@ -131,9 +136,9 @@ export default function App() {
 
 function Step({ n, text }) {
   return (
-    <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-      <span style={{ width:24,height:24,borderRadius:'50%',background:'var(--blue)',color:'#fff',fontSize:12,fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 }}>{n}</span>
-      <span style={{ color:'var(--text2)', fontSize:13 }}>{text}</span>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <span style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--blue)', color: '#fff', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{n}</span>
+      <span style={{ color: 'var(--text2)', fontSize: 13 }}>{text}</span>
     </div>
   )
 }

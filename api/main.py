@@ -130,6 +130,16 @@ def features(project_path: str):
     return {"features": db.get_features(proj["id"])}
 
 
+@app.get("/evolution")
+def evolution_timeline(project_path: str, limit: int = 200):
+    """Recorded function changes across the project, newest first."""
+    proj = db.get_project(project_path)
+    if not proj:
+        raise HTTPException(404, "Not registered")
+    entries = db.get_evolution_timeline(proj["id"], limit=limit)
+    return {"entries": entries}
+
+
 @app.get("/function")
 def explain(project_path: str, function_name: str, file: str = ""):
     proj = db.get_project(project_path)

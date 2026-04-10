@@ -353,9 +353,28 @@ def record_evolution(function_id: int, data: dict) -> int:
 def get_evolution(function_id: int) -> list[dict]:
     with conn() as c:
         return [dict(r) for r in c.execute(
-            "SELECT * FROM evolution WHERE function_id=? ORDER BY changed_at ASC",
+            "SELECT * FROM evolution WHERE function_id=? ORDER BY changed_at ASC, id ASC",
             (function_id,)
         )]
+
+
+def get_evolution_timeline(project_id: int, limit: int = 200) -> list[dict]:
+    """All evolution rows for a project, newest change first (by changed_at, then id)."""
+    limit = max(1, min(int(limit), 500))
+    with conn() as c:
+        rows = c.execute(
+            """
+            SELECT e.id, e.changed_at, e.change_summary, e.reason, e.triggered_by, e.git_hash,
+                   f.qualname, f.file, f.lineno
+            FROM evolution e
+            JOIN functions f ON f.id = e.function_id
+            WHERE f.project_id = ?
+            ORDER BY e.changed_at DESC, e.id DESC
+            LIMIT ?
+            """,
+            (project_id, limit),
+        ).fetchall()
+        return [dict(r) for r in rows]
 
 
 # ── features ───────────────────────────────────────────────────────────────

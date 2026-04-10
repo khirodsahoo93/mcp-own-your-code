@@ -4,9 +4,9 @@
 .logo{font-size:15px;font-weight:700;}
 .tagline{font-size:11px;color:var(--text3);}
 .body{display:flex;flex:1;overflow:hidden;}
-.sidebar{width:320px;display:flex;flex-direction:column;border-right:1px solid var(--border);background:var(--bg2);flex-shrink:0;overflow:hidden;}
+.sidebar{width:360px;display:flex;flex-direction:column;border-right:1px solid var(--border);background:var(--bg2);flex-shrink:0;overflow:hidden;}
 .tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;}
-.tab{flex:1;padding:10px 0;background:none;color:var(--text3);font-size:12px;font-weight:500;border-bottom:2px solid transparent;transition:color .15s;}
+.tab{flex:1;padding:10px 0;background:none;color:var(--text3);font-size:11px;font-weight:500;border-bottom:2px solid transparent;transition:color .15s;}
 .tab:hover{color:var(--text2);}
 .tabActive{color:var(--text);border-bottom-color:var(--blue);}
 .tabContent{flex:1;overflow:hidden;display:flex;flex-direction:column;}

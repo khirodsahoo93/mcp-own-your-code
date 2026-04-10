@@ -7,6 +7,7 @@ monkeypatching src.db.DB_PATH so no real data is touched.
 import os
 import textwrap
 import time
+from urllib.parse import quote
 
 import pytest
 from fastapi.testclient import TestClient
@@ -199,6 +200,35 @@ def test_embed_status_unknown_job(client):
 def test_embed_unregistered_project(client):
     r = client.post("/embed?project_path=/nope")
     assert r.status_code == 404
+
+
+def test_evolution_timeline_newest_first(client, registered, monkeypatch):
+    """GET /evolution returns cross-function changes ordered by changed_at DESC."""
+    client, path = registered
+    from src import db
+
+    proj = db.get_project(path)
+    fns = db.get_all_functions(proj["id"])
+    assert len(fns) >= 2
+    f_a, f_b = fns[0], fns[1]
+
+    seq = iter(
+        [
+            "2020-01-01T10:00:00",
+            "2025-06-01T12:00:00",
+            "2022-03-15T08:30:00",
+        ]
+    )
+    monkeypatch.setattr(db, "now", lambda: next(seq))
+
+    db.record_evolution(f_a["id"], {"change_summary": "oldest"})
+    db.record_evolution(f_b["id"], {"change_summary": "newest"})
+    db.record_evolution(f_a["id"], {"change_summary": "middle"})
+
+    r = client.get(f"/evolution?project_path={quote(path)}")
+    assert r.status_code == 200
+    summaries = [e["change_summary"] for e in r.json()["entries"]]
+    assert summaries == ["newest", "middle", "oldest"]
 
 
 # ── auth ───────────────────────────────────────────────────────────────────

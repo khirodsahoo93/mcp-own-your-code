@@ -9,6 +9,13 @@
 .meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px;font-size:12px;color:var(--text3);}
 .file{color:var(--text2);}
 .line{font-family:var(--mono);}
+.health{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.badge{font-size:10px;padding:2px 8px;border-radius:999px;border:1px solid var(--border);}
+.badgeWarn{color:var(--amber);background:rgba(210,153,34,.12);}
+.badgeMuted{color:var(--text3);background:var(--bg3);}
+.quickActions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.qaBtn{font-size:11px;color:var(--text2);border:1px solid var(--border);border-radius:999px;padding:4px 10px;background:var(--bg2);}
+.qaBtn:hover{border-color:var(--blue);color:var(--blue);}
 .title{font-weight:600;}
 .error{color:var(--red);font-size:13px;margin-top:12px;}
 .sig{margin:0 0 20px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);font-family:var(--mono);font-size:11px;overflow-x:auto;line-height:1.45;color:var(--text2);}
@@ -26,10 +33,16 @@
 .alt{font-size:12px;color:var(--text3);margin-top:8px;line-height:1.5;}
 .altLabel{color:var(--text2);}
 .when{display:block;margin-top:8px;font-size:10px;color:var(--text3);}
+.evHead{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.orderBtn{font-size:11px;color:var(--text2);border:1px solid var(--border);border-radius:999px;padding:3px 10px;background:var(--bg2);}
+.orderBtn:hover{border-color:var(--blue);color:var(--blue);}
 .timeline{list-style:none;border-left:2px solid var(--border);margin-left:6px;padding-left:16px;display:flex;flex-direction:column;gap:16px;}
 .evItem{position:relative;}
 .evWhen{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px;}
 .evWhat{font-size:14px;font-weight:500;margin-top:4px;color:var(--text);}
 .evWhy{font-size:13px;color:var(--text2);margin-top:6px;line-height:1.5;}
 .evTrig{font-size:12px;color:var(--text3);margin-top:6px;font-style:italic;}
-.git{font-family:var(--mono);font-size:10px;color:var(--purple);margin-top:4px;display:inline-block;}
+.evActions{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;align-items:center;}
+.git{font-family:var(--mono);font-size:10px;color:var(--purple);}
+.inlineBtn,.inlineLink{font-size:11px;color:var(--text2);border:1px solid var(--border);border-radius:999px;padding:2px 8px;background:var(--bg3);text-decoration:none;}
+.inlineBtn:hover,.inlineLink:hover{border-color:var(--blue);color:var(--blue);}
