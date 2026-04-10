@@ -3,6 +3,10 @@
 # PyPI: https://docs.pypi.org/trusted-publishers/adding-a-publisher/
 #   - Project → Manage → Publishing → Add a pending publisher (GitHub, this repo, workflow: release.yml)
 # npm: add repository secret NPM_TOKEN (granular token with publish for own-your-code-mcp)
+#
+# If PyPI shows invalid-publisher / invalid-pending-publisher: the GitHub Environment in your
+# PyPI trusted publisher (if any) must match this workflow. If you left Environment blank on PyPI,
+# do not add `environment:` under the pypi job. See: https://docs.pypi.org/trusted-publishers/troubleshooting/
 
 name: Release
 
@@ -10,6 +14,11 @@ on:
   push:
     tags:
       - "v*.*.*"
+
+# Avoid two tag pushes racing (duplicate uploads / confusing red runs).
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -19,6 +28,8 @@ jobs:
   pypi:
     name: Publish to PyPI
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
@@ -41,7 +52,10 @@ jobs:
     name: Publish npm shim
     # Skip when secret is unset so PyPI-only releases still succeed.
     if: secrets.NPM_TOKEN
+    needs: pypi
     runs-on: ubuntu-latest
+    # PyPI is the source of truth; npm is optional — don’t fail the whole run if npm rejects.
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
