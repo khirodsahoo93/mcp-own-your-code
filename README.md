@@ -250,6 +250,7 @@ Same SQLite database as MCP. No editor required.
 | Command | Purpose |
 |---------|---------|
 | `own-your-code --help` | All subcommands |
+| `own-your-code deps` | Optional packages (semantic, multilang, dev); add `--json` for machine output |
 | `own-your-code install` | Merge MCP config into host JSON files |
 | `own-your-code print-config` | Print `mcpServers` fragment |
 | `own-your-code status [--project-path P]` | DB path; if cwd is inside a registered project, show its stats, else list projects (or use `--project-path`) |
@@ -304,7 +305,7 @@ If the API runs on another host or port, set **`VITE_API_PROXY`** (for example i
 
 - **Swagger:** `http://127.0.0.1:8002/docs`
 - **ReDoc:** `http://127.0.0.1:8002/redoc`
-- **Server metadata:** `GET /server-info` (version, semantic deps, whether auth is enabled)
+- **Server metadata:** `GET /server-info` (version, `optional_dependencies` breakdown, whether auth is enabled)
 
 ---
 
@@ -313,6 +314,7 @@ If the API runs on another host or port, set **`VITE_API_PROXY`** (for example i
 | Tool | Description |
 |------|-------------|
 | `register_project` | Scan and index a codebase |
+| `check_dependencies` | Optional Python deps (semantic, multilang, dev); fast `find_spec` only; no `project_path` |
 | `record_intent` | Record why a function exists |
 | `record_evolution` | Log a behavioral change |
 | `explain_function` | Intent, decisions, evolution for one function |

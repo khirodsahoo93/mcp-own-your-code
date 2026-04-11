@@ -6,11 +6,12 @@ each function exists, what tradeoffs were made, and how things evolve.
 
 Core tools:
   record_intent, explain_function, get_codebase_map, find_by_intent,
-  get_evolution, annotate_existing, mark_file_reviewed
+  get_evolution, annotate_existing, mark_file_reviewed, check_dependencies
 
 Also:
   register_project — index a codebase (AST scan of .py files)
   record_evolution — log a change to an existing function
+  check_dependencies — optional packages (semantic, multilang); fast, no project_path
 """
 
 _INTENT_REASONING_FALLBACK = (
@@ -26,6 +27,7 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 
 from . import db
+from . import deps
 from . import embeddings as emb
 from .extractor import scan_project, scan_project_multi, extract_functions, get_git_hash
 
@@ -191,6 +193,15 @@ async def list_tools() -> list[types.Tool]:
             },
         ),
         types.Tool(
+            name="check_dependencies",
+            description=(
+                "Report optional Python packages: semantic (sentence-transformers, numpy), "
+                "multilang (tree-sitter + grammars), dev (pytest, httpx, ruff). "
+                "Uses find_spec only — no imports of torch or models. No project_path required."
+            ),
+            inputSchema={"type": "object", "properties": {}},
+        ),
+        types.Tool(
             name="embed_preflight",
             description=(
                 "Check whether sentence-transformers is available and how many intents still need embeddings — "
@@ -298,6 +309,7 @@ def _dispatch(name: str, args: dict) -> str:
         case "find_by_intent":     return _find_by_intent(args)
         case "get_evolution":      return _get_evolution(args)
         case "annotate_existing":  return _annotate_existing(args)
+        case "check_dependencies": return _check_dependencies(args)
         case "embed_preflight":    return _embed_preflight(args)
         case "embed_intents":      return _embed_intents(args)
         case _: raise ValueError(f"Unknown tool: {name}")
@@ -585,6 +597,10 @@ def _find_by_intent(args: dict) -> str:
             for r in results
         ],
     }, indent=2)
+
+
+def _check_dependencies(args: dict) -> str:
+    return json.dumps(deps.check_optional_dependencies(), indent=2)
 
 
 def _embed_preflight(args: dict) -> str:

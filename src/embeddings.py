@@ -35,16 +35,11 @@ def _deps_available() -> bool:
     """
     True if sentence-transformers and numpy appear installed, without importing them.
 
-    Importing ``sentence_transformers`` pulls in torch/transformers and can take many
-    seconds — avoid that on preflight, ``GET /server-info``, and similar checks.
-    Actual encoding still imports the stack inside ``get_model()`` / ``encode()``.
+    Delegates to :func:`deps.check_optional_dependencies` so probe logic stays in one place.
     """
-    import importlib.util
+    from .deps import check_optional_dependencies
 
-    return (
-        importlib.util.find_spec("sentence_transformers") is not None
-        and importlib.util.find_spec("numpy") is not None
-    )
+    return bool(check_optional_dependencies()["semantic"]["available"])
 
 
 def embedding_stack_available() -> bool:

@@ -30,6 +30,7 @@ from pydantic import BaseModel
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from src import db
+from src import deps
 from src import embeddings as emb
 from src.extractor import scan_project_multi
 
@@ -81,12 +82,14 @@ def server_info():
         ver = version("own-your-code")
     except Exception:
         ver = None
+    opt = deps.check_optional_dependencies()
     return {
         "service": "own-your-code",
         "version": ver,
         "api_auth_required": bool(_API_KEY),
         "cors_allow_all": _CORS_RAW.strip() == "*",
-        "semantic_stack_installed": emb.embedding_stack_available(),
+        "semantic_stack_installed": opt["semantic"]["available"],
+        "optional_dependencies": opt,
         "default_embed_model": emb.DEFAULT_MODEL,
         "database_env_set": bool(os.environ.get("OWN_YOUR_CODE_DB", "").strip()),
         "openapi_docs_path": "/docs",

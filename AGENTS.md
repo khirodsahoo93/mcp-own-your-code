@@ -19,6 +19,7 @@ These rules apply to any tool that speaks MCP to this server.
 | Legacy codebase, no history | `annotate_existing` |
 | Hook shows file touched but change was **non-semantic** | `mark_file_reviewed` |
 | First time on a repo | `register_project` |
+| User asks what’s installed / why semantic search fails | `check_dependencies` or CLI `own-your-code deps` |
 
 ## `record_intent` (non-negotiable for real edits)
 

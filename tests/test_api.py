@@ -327,9 +327,14 @@ def test_server_info_public_when_auth_required(monkeypatch, tmp_path):
     body = r.json()
     assert body["api_auth_required"] is True
     assert "semantic_stack_installed" in body
+    assert "optional_dependencies" in body
+    assert "semantic" in body["optional_dependencies"]
 
 
 def test_server_info_when_auth_disabled(client):
     r = client.get("/server-info")
     assert r.status_code == 200
-    assert r.json()["api_auth_required"] is False
+    data = r.json()
+    assert data["api_auth_required"] is False
+    assert "optional_dependencies" in data
+    assert data["semantic_stack_installed"] == data["optional_dependencies"]["semantic"]["available"]
