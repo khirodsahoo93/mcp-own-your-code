@@ -348,12 +348,6 @@ After that, every tab (Intent Map, Timeline, …) uses **that** `project_path` o
 
 **Mental model:** The UI is like a mail client — it doesn’t “know” your house until you **enter an address**. **`project_path`** is that address.
 
-### 9.2 Semantic embeddings, air-gapped use, and slow MCP tools (optional)
-
-If you install the **`semantic`** extra (`pip install "own-your-code[semantic]"`), you get vector search. The first run may **download** a small model from the **Hugging Face Hub**. For **offline** machines, download or cache the model while online, then set **`HF_HUB_OFFLINE=1`**, **`TRANSFORMERS_OFFLINE=1`**, or **`OWN_YOUR_CODE_EMBED_LOCAL_ONLY=1`** so loads use only local files (see the main README, sections *Optional extras* and *Long-running tools…*).
-
-Some MCP tools can **run for a long time** (full-project embedding, semantic search cold-start, indexing a huge repo, or building the full codebase map). If the editor times out, use **keyword** search, narrow **`register_project`** with globs, or run heavy work via the **REST API** (for example **`POST /embed`** with polling) instead of the MCP **`embed_intents`** tool.
-
 ---
 
 ## 10. Three practical ways to use Own Your Code

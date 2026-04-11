@@ -664,24 +664,6 @@ def get_embeddings_for_project(project_id: int, model: str) -> list[dict]:
         return [dict(r) for r in rows]
 
 
-def count_unembedded_intents(project_id: int, model: str) -> int:
-    """Count intents with no embedding for the given model (cheap preflight for embed)."""
-    with conn() as c:
-        row = c.execute(
-            """
-            SELECT COUNT(*) AS n
-            FROM intents i
-            JOIN functions f ON f.id = i.function_id
-            WHERE f.project_id = ?
-              AND i.id NOT IN (
-                  SELECT intent_id FROM intent_embeddings WHERE model = ?
-              )
-            """,
-            (project_id, model),
-        ).fetchone()
-        return int(row["n"]) if row else 0
-
-
 def get_unembedded_intents(project_id: int, model: str) -> list[dict]:
     """Return intents that have no embedding for the given model."""
     with conn() as c:

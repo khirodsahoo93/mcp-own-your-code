@@ -1,6 +1,6 @@
 [project]
 name = "own-your-code"
-version = "0.1.9"
+version = "0.1.8"
 description = "MCP server & web UI: intent ledger for your codebase — record why each function exists (Cursor, Claude, SQLite, FastAPI)."
 readme = "README.md"
 license = "MIT"

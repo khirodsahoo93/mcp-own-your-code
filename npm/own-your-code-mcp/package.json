@@ -1,6 +1,6 @@
 {
   "name": "own-your-code-mcp",
-  "version": "0.1.9",
+  "version": "0.1.8",
   "description": "Own Your Code MCP server (Model Context Protocol) — npm shim for PyPI package own-your-code; intent ledger & codebase documentation for Cursor, Claude, Windsurf",
   "license": "MIT",
   "repository": {

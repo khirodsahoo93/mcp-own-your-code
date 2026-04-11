@@ -15,11 +15,9 @@ These rules apply to any tool that speaks MCP to this server.
 | User asks what/why/how regarding a function | `explain_function`, `get_evolution` |
 | User wants a whole-codebase picture | `get_codebase_map` |
 | User wants “everything about X” (keyword) | `find_by_intent` |
-| Before **`embed_intents`** (large repo, confirm deps/backlog) | `embed_preflight` |
 | Legacy codebase, no history | `annotate_existing` |
 | Hook shows file touched but change was **non-semantic** | `mark_file_reviewed` |
 | First time on a repo | `register_project` |
-| User asks what’s installed / why semantic search fails | `check_dependencies` or CLI `own-your-code deps` |
 
 ## `record_intent` (non-negotiable for real edits)
 
@@ -43,10 +41,6 @@ Calling `record_intent` **clears the editor-hook backlog** for that file.
 
 - Semantic change → **`record_intent`** (per touched function as appropriate).
 - No intent to record (formatting, mechanical) → **`mark_file_reviewed`**.
-
-## Long-running tools (timeouts)
-
-MCP hosts may kill slow tool calls. Prefer **`keyword`** for **`find_by_intent`** unless semantic quality matters. Call **`embed_preflight`** before **`embed_intents`** on large projects. **`get_codebase_map`** can be slow on huge codebases (many functions). The web UI runs **`POST /embed`** in the background; the **`embed_intents`** MCP tool blocks until embedding finishes.
 
 ## Honesty
 

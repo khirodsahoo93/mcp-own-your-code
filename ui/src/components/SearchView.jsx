@@ -15,8 +15,7 @@ export default function SearchView({ projectPath, onSelect }) {
   const [modeUsed, setModeUsed] = useState(null)
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState(null)
-  // null | 'checking' | 'indexing' | result object | { error } | { info }
-  const [embedState, setEmbedState] = useState(null)
+  const [embedState, setEmbedState] = useState(null) // null | 'loading' | {embedded,skipped,model} | {error}
 
   const runSearch = useCallback(async () => {
     const q = query.trim()
@@ -45,47 +44,16 @@ export default function SearchView({ projectPath, onSelect }) {
   }, [projectPath, query, mode])
 
   const runEmbed = useCallback(async () => {
-    setEmbedState('checking')
+    setEmbedState('loading')
     try {
-      const pre = await apiJson(
-        `/embed/preflight?project_path=${encodeURIComponent(projectPath)}`
-      )
-      if (!pre.semantic_stack_installed) {
-        setEmbedState({ error: pre.message || 'Semantic stack not installed.' })
-        return
-      }
-      if (!pre.project_registered) {
-        setEmbedState({ error: pre.message || 'Project not registered.' })
-        return
-      }
-      if (!pre.can_start) {
-        setEmbedState({ info: pre.message || 'Nothing to index.' })
-        return
-      }
-      const warnText = (pre.warnings || []).filter(Boolean).join('\n')
-      const ok = window.confirm(
-        [pre.message, warnText && `Note:\n${warnText}`, 'Start indexing now?']
-          .filter(Boolean)
-          .join('\n\n')
-      )
-      if (!ok) {
-        setEmbedState(null)
-        return
-      }
-      setEmbedState('indexing')
       const d = await apiJson(`/embed?project_path=${encodeURIComponent(projectPath)}`, { method: 'POST' })
+      // poll job until done
       const jobId = d.job_id
-      for (let i = 0; i < 600; i++) {
+      for (let i = 0; i < 60; i++) {
         await new Promise(res => setTimeout(res, 500))
         const sd = await apiJson(`/embed/${jobId}`)
-        if (sd.status === 'done') {
-          setEmbedState(sd)
-          return
-        }
-        if (sd.status === 'error') {
-          setEmbedState({ error: sd.error })
-          return
-        }
+        if (sd.status === 'done') { setEmbedState(sd); return }
+        if (sd.status === 'error') { setEmbedState({ error: sd.error }); return }
       }
       setEmbedState({ error: 'Timed out waiting for embedding to complete.' })
     } catch (e) {
@@ -94,7 +62,6 @@ export default function SearchView({ projectPath, onSelect }) {
   }, [projectPath])
 
   const needsEmbed = mode === 'semantic' || mode === 'hybrid'
-  const embedBusy = embedState === 'checking' || embedState === 'indexing'
 
   return (
     <div className={s.container}>
@@ -135,24 +102,18 @@ export default function SearchView({ projectPath, onSelect }) {
             type="button"
             className={s.embedBtn}
             onClick={runEmbed}
-            disabled={embedBusy}
+            disabled={embedState === 'loading'}
           >
-            {embedState === 'checking'
-              ? 'Checking…'
-              : embedState === 'indexing'
-                ? 'Indexing…'
-                : 'Index Embeddings'}
+            {embedState === 'loading' ? 'Indexing…' : 'Index Embeddings'}
           </button>
-          {embedState && typeof embedState === 'object' && (
+          {embedState && embedState !== 'loading' && (
             embedState.error
               ? <div className={s.embedErr}>{embedState.error}</div>
-              : embedState.info
-                ? <div className={s.embedOk}>{embedState.info}</div>
-                : <div className={s.embedOk}>
-                    Done: {embedState.embedded} indexed
-                    {embedState.skipped > 0 ? `, ${embedState.skipped} already up-to-date` : ''}
-                    {' '}· {embedState.model}
-                  </div>
+              : <div className={s.embedOk}>
+                  ✓ {embedState.embedded} indexed
+                  {embedState.skipped > 0 ? `, ${embedState.skipped} already up-to-date` : ''}
+                  {' '}· {embedState.model}
+                </div>
           )}
         </div>
       )}
