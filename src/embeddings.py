@@ -8,6 +8,11 @@ an informative message.
 
 Default model: all-MiniLM-L6-v2 (fast, 22M params, 384-dim vectors).
 Override with the OWN_YOUR_CODE_EMBED_MODEL env var.
+
+Offline / air-gapped: if the model is already in the Hugging Face cache (or you pass
+a local directory path as OWN_YOUR_CODE_EMBED_MODEL), set one of:
+  HF_HUB_OFFLINE=1, TRANSFORMERS_OFFLINE=1, or OWN_YOUR_CODE_EMBED_LOCAL_ONLY=1
+so loads use local_files_only=True and do not contact the Hub.
 """
 from __future__ import annotations
 
@@ -40,6 +45,26 @@ def embedding_stack_available() -> bool:
     return _deps_available()
 
 
+def _truthy_env(name: str) -> bool:
+    return os.environ.get(name, "").strip().lower() in ("1", "true", "yes", "on")
+
+
+def local_files_only_from_env() -> bool:
+    """
+    True when embedding loads should not contact the Hugging Face Hub.
+
+    Honors standard HF/transformers offline flags plus OWN_YOUR_CODE_EMBED_LOCAL_ONLY.
+    Requires weights already cached locally or model_name pointing at a local path.
+    """
+    if _truthy_env("OWN_YOUR_CODE_EMBED_LOCAL_ONLY"):
+        return True
+    if _truthy_env("HF_HUB_OFFLINE"):
+        return True
+    if _truthy_env("TRANSFORMERS_OFFLINE"):
+        return True
+    return False
+
+
 def get_model(model_name: str = DEFAULT_MODEL):
     """Load (and cache) a SentenceTransformer model. Returns None if deps missing."""
     if not _deps_available():
@@ -47,7 +72,13 @@ def get_model(model_name: str = DEFAULT_MODEL):
     if model_name not in _model_cache:
         from sentence_transformers import SentenceTransformer
         logger.info("Loading embedding model %s …", model_name)
-        _model_cache[model_name] = SentenceTransformer(model_name)
+        kwargs: dict = {}
+        if local_files_only_from_env():
+            logger.info("Embedding load: local_files_only=True (HF Hub offline mode)")
+            lf = {"local_files_only": True}
+            kwargs["model_kwargs"] = lf
+            kwargs["tokenizer_kwargs"] = lf
+        _model_cache[model_name] = SentenceTransformer(model_name, **kwargs)
     return _model_cache[model_name]
 
 

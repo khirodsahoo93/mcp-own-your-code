@@ -191,12 +191,28 @@ async def list_tools() -> list[types.Tool]:
             },
         ),
         types.Tool(
+            name="embed_preflight",
+            description=(
+                "Check whether sentence-transformers is available and how many intents still need embeddings — "
+                "fast, no model load. Call before embed_intents to confirm dependencies and backlog size."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_path": {"type": "string"},
+                    "model":        {"type": "string", "description": "Embedding model name. Default: all-MiniLM-L6-v2.", "default": "all-MiniLM-L6-v2"},
+                },
+                "required": ["project_path"],
+            },
+        ),
+        types.Tool(
             name="embed_intents",
             description=(
                 "Compute and store vector embeddings for all intents in a project (backfill). "
                 "Required before using semantic or hybrid search modes in find_by_intent. "
                 "Uses sentence-transformers (all-MiniLM-L6-v2 by default). "
-                "Safe to re-run; only processes intents that haven't been embedded yet."
+                "Safe to re-run; only processes intents that haven't been embedded yet. "
+                "Prefer calling embed_preflight first to verify deps and pending count."
             ),
             inputSchema={
                 "type": "object",
@@ -282,6 +298,7 @@ def _dispatch(name: str, args: dict) -> str:
         case "find_by_intent":     return _find_by_intent(args)
         case "get_evolution":      return _get_evolution(args)
         case "annotate_existing":  return _annotate_existing(args)
+        case "embed_preflight":    return _embed_preflight(args)
         case "embed_intents":      return _embed_intents(args)
         case _: raise ValueError(f"Unknown tool: {name}")
 
@@ -568,6 +585,64 @@ def _find_by_intent(args: dict) -> str:
             for r in results
         ],
     }, indent=2)
+
+
+def _embed_preflight(args: dict) -> str:
+    path = args["project_path"]
+    model_name = args.get("model", emb.DEFAULT_MODEL)
+    deps_ok = emb.embedding_stack_available()
+    proj = db.get_project(path)
+    if not proj:
+        return json.dumps(
+            {
+                "semantic_stack_installed": deps_ok,
+                "project_registered": False,
+                "pending_count": 0,
+                "model": model_name,
+                "can_start": False,
+                "message": "Project not registered.",
+                "warnings": [],
+            },
+            indent=2,
+        )
+    pending = db.count_unembedded_intents(proj["id"], model_name) if deps_ok else 0
+    warnings: list[str] = []
+    if deps_ok and pending > 500:
+        warnings.append(
+            f"Very large backlog ({pending} intents): expect long runtime and high RAM on CPU-only machines."
+        )
+    elif deps_ok and pending > 200:
+        warnings.append(
+            f"Large backlog ({pending} intents): embedding may take several minutes and use significant RAM."
+        )
+    elif deps_ok and pending > 50:
+        warnings.append(
+            f"{pending} intents to embed — may take a few minutes on a laptop CPU."
+        )
+    if not deps_ok:
+        msg = (
+            "Semantic stack not installed. Run: pip install sentence-transformers numpy "
+            "(or pip install 'own-your-code[semantic]')."
+        )
+        can_start = False
+    elif pending == 0:
+        msg = f"All intents already embedded for model {model_name}."
+        can_start = False
+    else:
+        msg = f"Ready to index {pending} intent(s) with {model_name}."
+        can_start = True
+    return json.dumps(
+        {
+            "semantic_stack_installed": deps_ok,
+            "project_registered": True,
+            "pending_count": pending,
+            "model": model_name,
+            "can_start": can_start,
+            "message": msg,
+            "warnings": warnings,
+        },
+        indent=2,
+    )
 
 
 def _embed_intents(args: dict) -> str:

@@ -316,6 +316,7 @@ If the API runs on another host or port, set **`VITE_API_PROXY`** (for example i
 | `record_evolution` | Log a behavioral change |
 | `explain_function` | Intent, decisions, evolution for one function |
 | `find_by_intent` | Keyword / semantic / hybrid search |
+| `embed_preflight` | Check deps + how many intents need embeddings (fast); call before `embed_intents` on large projects |
 | `embed_intents` | Backfill embeddings for semantic search |
 | `get_codebase_map` | Map, coverage, hook backlog |
 | `get_evolution` | Evolution entries for one function |
@@ -335,6 +336,7 @@ If the API runs on another host or port, set **`VITE_API_PROXY`** (for example i
 | `GET` | `/map` | Codebase map (`?file=` optional) |
 | `GET` | `/function` | One function’s intent stack |
 | `POST` | `/search` | Keyword / semantic / hybrid |
+| `GET` | `/embed/preflight` | Check semantic deps + count intents to embed (no heavy work); UI confirms before `POST /embed` |
 | `POST` | `/embed` | Start embed job |
 | `GET` | `/embed/{job_id}` | Job status |
 | `GET` | `/stats` | Coverage + backlog |

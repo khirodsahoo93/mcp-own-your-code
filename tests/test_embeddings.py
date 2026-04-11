@@ -31,6 +31,35 @@ def project(tmp_path):
     return {"project_id": pid, "path": str(tmp_path), "intent_ids": [iid1, iid2]}
 
 
+# ── HF Hub offline env ────────────────────────────────────────────────────────
+
+def test_local_files_only_from_env_default(monkeypatch):
+    monkeypatch.delenv("OWN_YOUR_CODE_EMBED_LOCAL_ONLY", raising=False)
+    monkeypatch.delenv("HF_HUB_OFFLINE", raising=False)
+    monkeypatch.delenv("TRANSFORMERS_OFFLINE", raising=False)
+    assert emb.local_files_only_from_env() is False
+
+
+def test_local_files_only_from_env_flags(monkeypatch):
+    monkeypatch.delenv("HF_HUB_OFFLINE", raising=False)
+    monkeypatch.delenv("TRANSFORMERS_OFFLINE", raising=False)
+    monkeypatch.setenv("OWN_YOUR_CODE_EMBED_LOCAL_ONLY", "1")
+    assert emb.local_files_only_from_env() is True
+
+
+def test_local_files_only_hf_hub_offline(monkeypatch):
+    monkeypatch.delenv("OWN_YOUR_CODE_EMBED_LOCAL_ONLY", raising=False)
+    monkeypatch.setenv("HF_HUB_OFFLINE", "true")
+    assert emb.local_files_only_from_env() is True
+
+
+def test_local_files_only_transformers_offline(monkeypatch):
+    monkeypatch.delenv("OWN_YOUR_CODE_EMBED_LOCAL_ONLY", raising=False)
+    monkeypatch.delenv("HF_HUB_OFFLINE", raising=False)
+    monkeypatch.setenv("TRANSFORMERS_OFFLINE", "1")
+    assert emb.local_files_only_from_env() is True
+
+
 # ── vec serialisation ─────────────────────────────────────────────────────────
 
 def test_vec_roundtrip():

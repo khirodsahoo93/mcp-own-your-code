@@ -217,6 +217,58 @@ def search(req: SearchReq):
     return {"query": req.query, "mode": mode_used, "results": results}
 
 
+@protected.get("/embed/preflight", tags=["Search"])
+def embed_preflight(project_path: str, model: str = emb.DEFAULT_MODEL):
+    """
+    Check semantic-search dependencies and how many intents need embedding — no heavy work.
+    Call before POST /embed so the UI (or user) can confirm.
+    """
+    deps_ok = emb.embedding_stack_available()
+    proj = db.get_project(project_path)
+    if not proj:
+        return {
+            "semantic_stack_installed": deps_ok,
+            "project_registered": False,
+            "pending_count": 0,
+            "model": model,
+            "can_start": False,
+            "message": "Project not registered.",
+            "warnings": [],
+        }
+    pending = db.count_unembedded_intents(proj["id"], model) if deps_ok else 0
+    warnings: list[str] = []
+    if deps_ok and pending > 500:
+        warnings.append(
+            f"Very large backlog ({pending} intents): expect long runtime and high RAM on CPU-only machines."
+        )
+    elif deps_ok and pending > 200:
+        warnings.append(
+            f"Large backlog ({pending} intents): embedding may take several minutes and use significant RAM."
+        )
+    elif deps_ok and pending > 50:
+        warnings.append(
+            f"{pending} intents to embed — may take a few minutes on a laptop CPU. Close other heavy apps if possible."
+        )
+    if not deps_ok:
+        msg = "Semantic stack not installed. Run: pip install sentence-transformers numpy (or pip install 'own-your-code[semantic]')."
+        can_start = False
+    elif pending == 0:
+        msg = f"All intents already embedded for model {model}."
+        can_start = False
+    else:
+        msg = f"Ready to index {pending} intent(s) with {model}."
+        can_start = True
+    return {
+        "semantic_stack_installed": deps_ok,
+        "project_registered": True,
+        "pending_count": pending,
+        "model": model,
+        "can_start": can_start,
+        "message": msg,
+        "warnings": warnings,
+    }
+
+
 @protected.post("/embed", status_code=202, tags=["Search"])
 def embed_intents(project_path: str, background_tasks: BackgroundTasks, model: str = emb.DEFAULT_MODEL):
     """Start embedding in the background. Returns a job_id to poll with GET /embed/{job_id}."""

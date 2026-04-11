@@ -92,6 +92,31 @@ def test_projects_list_empty(client):
     assert r.json()["projects"] == []
 
 
+def test_embed_preflight_not_registered(client):
+    r = client.get(
+        "/embed/preflight",
+        params={"project_path": "/nonexistent/project/path"},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["project_registered"] is False
+    assert body["can_start"] is False
+    assert body["pending_count"] == 0
+
+
+def test_embed_preflight_registered_no_intents(client, tmp_path):
+    proj = tmp_path / "p"
+    proj.mkdir()
+    (proj / "a.py").write_text("def f(): pass\n")
+    assert client.post("/register", json={"path": str(proj)}).status_code == 200
+    r = client.get("/embed/preflight", params={"project_path": str(proj)})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["project_registered"] is True
+    assert body["pending_count"] == 0
+    assert body["can_start"] is False
+
+
 # ── register ──────────────────────────────────────────────────────────────
 
 def test_register_indexes_functions(client, tmp_path):

@@ -15,6 +15,7 @@ These rules apply to any tool that speaks MCP to this server.
 | User asks what/why/how regarding a function | `explain_function`, `get_evolution` |
 | User wants a whole-codebase picture | `get_codebase_map` |
 | User wants “everything about X” (keyword) | `find_by_intent` |
+| Before **`embed_intents`** (large repo, confirm deps/backlog) | `embed_preflight` |
 | Legacy codebase, no history | `annotate_existing` |
 | Hook shows file touched but change was **non-semantic** | `mark_file_reviewed` |
 | First time on a repo | `register_project` |
