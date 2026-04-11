@@ -8,6 +8,7 @@ User-facing CLI: MCP installer + terminal helpers.
   own-your-code prune [PATH] [--dry-run]      (remove DB rows not in current scan)
   own-your-code visualize [--project-path PATH] --out FILE.html
   own-your-code watch [--project-path PATH] [--interval SEC]
+  own-your-code deps [--json]
 
 MCP tools (record_intent, register_project, …) are for AI hosts over stdio.
 These CLI commands are for you in a terminal — same SQLite DB, same project_path rules.
@@ -409,6 +410,32 @@ th{{background:#161b22;color:#8b949e;}}
     return 0
 
 
+def cmd_deps(as_json: bool) -> int:
+    """Print optional dependency status (semantic, multilang, dev)."""
+    from src.deps import check_optional_dependencies
+
+    data = check_optional_dependencies()
+    if as_json:
+        print(json.dumps(data, indent=2))
+        return 0
+
+    print("Optional dependencies (own-your-code)\n")
+    for key in ("semantic", "multilang", "full", "dev"):
+        block = data[key]
+        if key == "full":
+            ok = "yes" if block["available"] else "no"
+            print(f"full (semantic + multilang): {ok}")
+            print(f"  install: {block['pip_install']}\n")
+            continue
+        print(f"{key}:")
+        for mod, present in block["modules"].items():
+            print(f"  {mod}: {'yes' if present else 'no'}")
+        overall = "ready" if block["available"] else "incomplete"
+        print(f"  overall: {overall}")
+        print(f"  install: {block['pip_install']}\n")
+    return 0
+
+
 def cmd_watch(project_path: str | None, interval: int) -> int:
     """Print coverage stats every INTERVAL seconds until Ctrl+C."""
     from src import db
@@ -464,6 +491,16 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     sub.add_parser("print-config", help="Print mcpServers JSON fragment to stdout")
+
+    p_deps = sub.add_parser(
+        "deps",
+        help="Show optional packages (semantic, multilang, dev) without importing torch.",
+    )
+    p_deps.add_argument(
+        "--json",
+        action="store_true",
+        help="Machine-readable output",
+    )
 
     p_status = sub.add_parser(
         "status",
@@ -531,6 +568,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "print-config":
         return cmd_print_config()
+
+    if args.cmd == "deps":
+        return cmd_deps(args.json)
 
     if args.cmd == "install":
         platforms = args.platforms

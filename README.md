@@ -68,12 +68,13 @@ Search ranking depends on many factors (backlinks, relevance, competition). Usin
 11. [REST API](#rest-api)
 12. [Search modes](#search-modes)
 13. [Optional extras (semantic, multi-language)](#optional-extras-semantic-multi-language)
-14. [Post-write hook](#post-write-hook)
-15. [Production deployment](#production-deployment)
-16. [Development](#development)
-17. [Database schema](#database-schema)
-18. [Publishing (maintainers)](#publishing-maintainers)
-19. [License](#license)
+14. [Long-running tools, offline embeddings, evolution without Git](#long-running-tools-offline-embeddings-evolution-without-git)
+15. [Post-write hook](#post-write-hook)
+16. [Production deployment](#production-deployment)
+17. [Development](#development)
+18. [Database schema](#database-schema)
+19. [Publishing (maintainers)](#publishing-maintainers)
+20. [License](#license)
 
 ---
 
@@ -249,6 +250,7 @@ Same SQLite database as MCP. No editor required.
 | Command | Purpose |
 |---------|---------|
 | `own-your-code --help` | All subcommands |
+| `own-your-code deps` | Optional packages (semantic, multilang, dev); add `--json` for machine output |
 | `own-your-code install` | Merge MCP config into host JSON files |
 | `own-your-code print-config` | Print `mcpServers` fragment |
 | `own-your-code status [--project-path P]` | DB path; if cwd is inside a registered project, show its stats, else list projects (or use `--project-path`) |
@@ -303,7 +305,7 @@ If the API runs on another host or port, set **`VITE_API_PROXY`** (for example i
 
 - **Swagger:** `http://127.0.0.1:8002/docs`
 - **ReDoc:** `http://127.0.0.1:8002/redoc`
-- **Server metadata:** `GET /server-info` (version, semantic deps, whether auth is enabled)
+- **Server metadata:** `GET /server-info` (version, `optional_dependencies` breakdown, whether auth is enabled)
 
 ---
 
@@ -312,10 +314,12 @@ If the API runs on another host or port, set **`VITE_API_PROXY`** (for example i
 | Tool | Description |
 |------|-------------|
 | `register_project` | Scan and index a codebase |
+| `check_dependencies` | Optional Python deps (semantic, multilang, dev); fast `find_spec` only; no `project_path` |
 | `record_intent` | Record why a function exists |
 | `record_evolution` | Log a behavioral change |
 | `explain_function` | Intent, decisions, evolution for one function |
 | `find_by_intent` | Keyword / semantic / hybrid search |
+| `embed_preflight` | Check deps + how many intents need embeddings (fast); call before `embed_intents` on large projects |
 | `embed_intents` | Backfill embeddings for semantic search |
 | `get_codebase_map` | Map, coverage, hook backlog |
 | `get_evolution` | Evolution entries for one function |
@@ -335,6 +339,7 @@ If the API runs on another host or port, set **`VITE_API_PROXY`** (for example i
 | `GET` | `/map` | Codebase map (`?file=` optional) |
 | `GET` | `/function` | One function’s intent stack |
 | `POST` | `/search` | Keyword / semantic / hybrid |
+| `GET` | `/embed/preflight` | Check semantic deps + count intents to embed (no heavy work); UI confirms before `POST /embed` |
 | `POST` | `/embed` | Start embed job |
 | `GET` | `/embed/{job_id}` | Job status |
 | `GET` | `/stats` | Coverage + backlog |
@@ -392,6 +397,38 @@ Register with filters (REST body or MCP args as supported):
 
 ---
 
+## Long-running tools, offline embeddings, evolution without Git
+
+### Long-running or heavy MCP tools
+
+Some tools do a lot of work in one call. MCP hosts may **time out** before the server finishes; the UI avoids that for embeddings by using **`POST /embed`** and polling **`GET /embed/{job_id}`**.
+
+| Tool / flow | What to expect |
+|-------------|----------------|
+| **`embed_intents`** | Loads the embedding model (first call may **download** weights), then encodes **all** pending intents. Can take minutes and significant RAM on large backlogs. Prefer **`embed_preflight`** first. |
+| **`find_by_intent`** (`semantic` / `hybrid`) | Loads the model (if needed) and runs inference on the query. Use **`keyword`** when you only need fast text match. |
+| **`register_project`** | Walks and parses the tree; huge repos can take a long time. Narrow with **`include_globs`**, **`ignore_dirs`**, **`languages`**. |
+| **`get_codebase_map`** | One DB round-trip per function for intent/decision/evolution; very large projects → slow calls and **large JSON** responses. |
+| **`annotate_existing`** (no `file`, no `annotations`) | Lists unannotated work via the same map path as above — same scaling concerns. |
+
+### Hugging Face Hub offline / air-gapped
+
+After the model is **cached** (run once online) or if **`OWN_YOUR_CODE_EMBED_MODEL`** points at a **local directory** with the model files, you can block network access to the Hub:
+
+| Variable | When set to `1` / `true` / `yes` / `on` |
+|----------|------------------------------------------|
+| **`OWN_YOUR_CODE_EMBED_LOCAL_ONLY`** | Force `local_files_only=True` when loading **sentence-transformers** (no Hub fetch). |
+| **`HF_HUB_OFFLINE`** | Standard Hugging Face Hub client offline mode; same behavior for embedding loads. |
+| **`TRANSFORMERS_OFFLINE`** | Standard transformers offline flag; same behavior for embedding loads. |
+
+If weights are not on disk, offline mode **fails** until you cache them or set a local path.
+
+### Evolution without Git
+
+**`record_evolution`** does **not** require a Git repository. If `git rev-parse` fails, **`git_hash`** is stored as null; the evolution row and timeline still work. Put revision or context in **`reason`**, **`triggered_by`**, or **`change_summary`** when you do not use Git.
+
+---
+
 ## Post-write hook
 
 Tracks edited files so **`get_codebase_map`** can show a **hook backlog** until you **`record_intent`** or **`mark_file_reviewed`**.
@@ -415,7 +452,10 @@ Wire the hook to your editor’s “after save” hook path as needed.
 | `OWN_YOUR_CODE_DB` | `owns.db` | SQLite path |
 | `OWN_YOUR_CODE_API_KEY` | *(unset)* | Require `X-Api-Key` on data routes; SPA shell + `/assets` + `/health` + `/server-info` stay public |
 | `OWN_YOUR_CODE_CORS_ORIGINS` | `*` | Comma-separated origins |
-| `OWN_YOUR_CODE_EMBED_MODEL` | `all-MiniLM-L6-v2` | Embedding model name |
+| `OWN_YOUR_CODE_EMBED_MODEL` | `all-MiniLM-L6-v2` | Embedding model name or local directory path |
+| `OWN_YOUR_CODE_EMBED_LOCAL_ONLY` | *(unset)* | If truthy, load embeddings with `local_files_only=True` (air-gapped; cache or local model required) |
+| `HF_HUB_OFFLINE` | *(unset)* | If truthy, same offline load behavior for the Hub stack |
+| `TRANSFORMERS_OFFLINE` | *(unset)* | If truthy, same offline load behavior for transformers |
 
 ### Docker
 
@@ -482,8 +522,8 @@ SQLite tables (version via `PRAGMA user_version`; migrations are additive-safe):
 **Release:** bump `version` in `pyproject.toml` and `npm/own-your-code-mcp/package.json`, then tag:
 
 ```bash
-git tag v0.1.0
-git push origin main && git push origin v0.1.0
+git tag vX.Y.Z # must match pyproject.toml + npm package.json
+git push origin main && git push origin vX.Y.Z
 ```
 
 **Manual PyPI / npm:** use `python -m build` + `twine upload`, and `npm publish` from `npm/own-your-code-mcp`.
