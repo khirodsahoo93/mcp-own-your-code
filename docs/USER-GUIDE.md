@@ -332,6 +332,8 @@ In this repo, **`api/main.py`** checks whether `ui/dist` exists. If it does, Fas
 
 That is why “I pip-installed from PyPI but I don’t see the UI” happens: the **wheel** doesn’t bundle `ui/dist` today.
 
+**Workaround:** after you build `ui/dist` (from a clone), set the environment variable **`OWN_YOUR_CODE_UI_DIST`** to the **absolute path** of that folder (the directory containing `index.html` and `assets/`), then restart **`uvicorn`**. The server will serve the UI from that path even when the Python package came from PyPI.
+
 ### 9.1 “I opened the UI from `ui/` — how does it know my codebase?”
 
 **It doesn’t guess.** The folder where you run `npm run dev` or the browser URL is **not** your “working project.” The UI is only a **front-end**; it loads data from the **API** by sending a **`project_path`** you choose.

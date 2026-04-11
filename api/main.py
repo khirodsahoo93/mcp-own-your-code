@@ -312,9 +312,17 @@ app.include_router(public)
 app.include_router(protected)
 
 # serve built UI (no API key — browser loads shell + assets without custom headers)
-UI_DIST = Path(__file__).parent.parent / "ui" / "dist"
-if UI_DIST.exists():
-    app.mount("/assets", StaticFiles(directory=UI_DIST / "assets"), name="assets")
+# PyPI wheels do not bundle ui/dist; set OWN_YOUR_CODE_UI_DIST to an absolute path to a
+# built tree (the folder containing index.html and assets/), e.g. after `cd ui && npm run build`.
+_ui_override = os.environ.get("OWN_YOUR_CODE_UI_DIST", "").strip()
+if _ui_override:
+    UI_DIST = Path(_ui_override).expanduser().resolve()
+else:
+    UI_DIST = (Path(__file__).parent.parent / "ui" / "dist").resolve()
+if UI_DIST.is_dir() and (UI_DIST / "index.html").is_file():
+    _assets = UI_DIST / "assets"
+    if _assets.is_dir():
+        app.mount("/assets", StaticFiles(directory=_assets), name="assets")
 
     @app.get("/{full_path:path}", include_in_schema=False)
     def serve_ui(full_path: str):

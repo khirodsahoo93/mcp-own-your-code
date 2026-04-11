@@ -273,7 +273,12 @@ cd ui && npm ci && npm run build && cd ..   # first time: build static UI
 uvicorn api.main:app --reload --host 127.0.0.1 --port 8002
 ```
 
-Open **http://127.0.0.1:8002** — FastAPI serves **`ui/dist`** when present.
+Open **http://127.0.0.1:8002** — FastAPI serves **`ui/dist`** when it can find a built UI next to the loaded `api` package, or when you point at one explicitly.
+
+**`pip install own-your-code` from PyPI** ships **no** `ui/dist`, so **`/` can 404** while **`/docs`** still works. Fix either:
+
+- Clone the repo, run `cd ui && npm ci && npm run build`, then start uvicorn from that **repo root** with **`pip install -e .`** (editable), **or**
+- Build `ui/dist` anywhere and set **`OWN_YOUR_CODE_UI_DIST`** to the **absolute path** of that folder (the directory that contains `index.html` and `assets/`), then restart uvicorn.
 
 **Vite dev** (hot reload UI, API still on 8002):
 
