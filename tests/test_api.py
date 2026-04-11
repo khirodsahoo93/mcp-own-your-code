@@ -61,6 +61,31 @@ def test_health(client):
     assert r.json()["status"] == "ok"
 
 
+def test_serves_ui_when_own_your_code_ui_dist_set(tmp_path, monkeypatch, isolated_db):
+    """PyPI installs have no ui/dist next to api; env override must still serve the SPA."""
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    (dist / "index.html").write_text(
+        "<!DOCTYPE html><html><body>ledger-ui-test</body></html>"
+    )
+    (dist / "assets").mkdir()
+    (dist / "assets" / "app.js").write_text("// ok")
+    monkeypatch.setenv("OWN_YOUR_CODE_UI_DIST", str(dist))
+
+    import importlib
+
+    import api.main as api_mod
+
+    importlib.reload(api_mod)
+    tc = TestClient(api_mod.app)
+    assert tc.get("/health").status_code == 200
+    r = tc.get("/")
+    assert r.status_code == 200
+    assert b"ledger-ui-test" in r.content
+    r_asset = tc.get("/assets/app.js")
+    assert r_asset.status_code == 200
+
+
 def test_projects_list_empty(client):
     r = client.get("/projects")
     assert r.status_code == 200
