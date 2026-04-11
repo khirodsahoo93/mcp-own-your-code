@@ -32,12 +32,19 @@ _model_cache: dict[str, object] = {}
 
 
 def _deps_available() -> bool:
-    try:
-        import sentence_transformers  # noqa: F401
-        import numpy  # noqa: F401
-        return True
-    except ImportError:
-        return False
+    """
+    True if sentence-transformers and numpy appear installed, without importing them.
+
+    Importing ``sentence_transformers`` pulls in torch/transformers and can take many
+    seconds — avoid that on preflight, ``GET /server-info``, and similar checks.
+    Actual encoding still imports the stack inside ``get_model()`` / ``encode()``.
+    """
+    import importlib.util
+
+    return (
+        importlib.util.find_spec("sentence_transformers") is not None
+        and importlib.util.find_spec("numpy") is not None
+    )
 
 
 def embedding_stack_available() -> bool:

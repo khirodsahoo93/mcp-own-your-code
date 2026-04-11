@@ -60,6 +60,21 @@ def test_local_files_only_transformers_offline(monkeypatch):
     assert emb.local_files_only_from_env() is True
 
 
+def test_deps_available_false_without_resolving_heavy_imports(monkeypatch):
+    """Preflight must not import sentence_transformers (torch); use find_spec only."""
+    import importlib.util
+
+    real_find = importlib.util.find_spec
+
+    def fake_find(name):
+        if name == "sentence_transformers":
+            return None
+        return real_find(name)
+
+    monkeypatch.setattr(importlib.util, "find_spec", fake_find)
+    assert emb._deps_available() is False
+
+
 # ── vec serialisation ─────────────────────────────────────────────────────────
 
 def test_vec_roundtrip():
