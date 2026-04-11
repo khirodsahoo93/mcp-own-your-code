@@ -43,6 +43,10 @@ Calling `record_intent` **clears the editor-hook backlog** for that file.
 - Semantic change → **`record_intent`** (per touched function as appropriate).
 - No intent to record (formatting, mechanical) → **`mark_file_reviewed`**.
 
+## Long-running tools (timeouts)
+
+MCP hosts may kill slow tool calls. Prefer **`keyword`** for **`find_by_intent`** unless semantic quality matters. Call **`embed_preflight`** before **`embed_intents`** on large projects. **`get_codebase_map`** can be slow on huge codebases (many functions). The web UI runs **`POST /embed`** in the background; the **`embed_intents`** MCP tool blocks until embedding finishes.
+
 ## Honesty
 
 - Prefer accurate **confidence** (5 = you just wrote it; 1–3 = inferred).
