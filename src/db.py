@@ -29,6 +29,7 @@ import os
 import sqlite3
 import json
 import sys
+import threading
 from collections import defaultdict
 from pathlib import Path
 from contextlib import contextmanager
@@ -61,6 +62,7 @@ _DEFAULT_DB = _default_db_path()
 DB_PATH = Path(os.environ.get("OWN_YOUR_CODE_DB", str(_DEFAULT_DB))).expanduser().resolve()
 
 _db_initialized = False
+_db_init_lock = threading.Lock()
 
 SCHEMA_VERSION = 2
 
@@ -185,8 +187,10 @@ def init_db():
 def _ensure_schema():
     global _db_initialized
     if not _db_initialized:
-        init_db()
-        _db_initialized = True
+        with _db_init_lock:
+            if not _db_initialized:
+                init_db()
+                _db_initialized = True
 
 
 @contextmanager
@@ -427,6 +431,70 @@ def get_latest_intent(function_id: int) -> dict | None:
         return dict(row) if row else None
 
 
+def get_latest_intents_batch(function_ids: list[int]) -> dict[int, dict | None]:
+    """Fetch the latest intent for each function in one pass (avoids N+1)."""
+    if not function_ids:
+        return {}
+    result: dict[int, dict | None] = {fid: None for fid in function_ids}
+    with conn() as c:
+        for batch in _chunked_ids(function_ids):
+            q = ",".join("?" * len(batch))
+            rows = c.execute(
+                f"""
+                SELECT * FROM intents
+                WHERE id IN (
+                    SELECT MAX(id) FROM intents
+                    WHERE function_id IN ({q})
+                    GROUP BY function_id
+                )
+                """,
+                batch,
+            ).fetchall()
+            for row in rows:
+                result[row["function_id"]] = dict(row)
+    return result
+
+
+def get_decisions_batch(function_ids: list[int]) -> dict[int, list[dict]]:
+    """Fetch decisions for all functions in one pass (avoids N+1)."""
+    if not function_ids:
+        return {}
+    result: dict[int, list[dict]] = {fid: [] for fid in function_ids}
+    with conn() as c:
+        for batch in _chunked_ids(function_ids):
+            q = ",".join("?" * len(batch))
+            rows = c.execute(
+                f"SELECT * FROM decisions WHERE function_id IN ({q}) ORDER BY recorded_at DESC",
+                batch,
+            ).fetchall()
+            for row in rows:
+                d = dict(row)
+                try:
+                    d["alternatives"] = json.loads(d["alternatives"] or "[]")
+                except (json.JSONDecodeError, TypeError):
+                    d["alternatives"] = []
+                result[d["function_id"]].append(d)
+    return result
+
+
+def get_evolution_batch(function_ids: list[int]) -> dict[int, list[dict]]:
+    """Fetch evolution rows for all functions in one pass (avoids N+1)."""
+    if not function_ids:
+        return {}
+    result: dict[int, list[dict]] = {fid: [] for fid in function_ids}
+    with conn() as c:
+        for batch in _chunked_ids(function_ids):
+            q = ",".join("?" * len(batch))
+            rows = c.execute(
+                f"SELECT * FROM evolution WHERE function_id IN ({q}) ORDER BY changed_at ASC, id ASC",
+                batch,
+            ).fetchall()
+            for row in rows:
+                d = dict(row)
+                result[d["function_id"]].append(d)
+    return result
+
+
 # ── decisions ──────────────────────────────────────────────────────────────
 
 def record_decision(function_id: int, data: dict) -> int:
@@ -447,8 +515,10 @@ def get_decisions(function_id: int) -> list[dict]:
             (function_id,)
         )]
         for r in rows:
-            try: r["alternatives"] = json.loads(r["alternatives"] or "[]")
-            except: r["alternatives"] = []
+            try:
+                r["alternatives"] = json.loads(r["alternatives"] or "[]")
+            except (json.JSONDecodeError, TypeError):
+                r["alternatives"] = []
         return rows
 
 
@@ -564,16 +634,19 @@ def get_codebase_map(project_id: int) -> dict:
     funcs = get_all_functions(project_id)
     features = get_features(project_id)
 
+    function_ids = [f["id"] for f in funcs]
+    intents_by_fn   = get_latest_intents_batch(function_ids)
+    decisions_by_fn = get_decisions_batch(function_ids)
+    evolution_by_fn = get_evolution_batch(function_ids)
+
     fn_map = {}
     for f in funcs:
-        intent = get_latest_intent(f["id"])
-        decisions = get_decisions(f["id"])
-        ev = get_evolution(f["id"])
+        intent = intents_by_fn.get(f["id"])
         fn_map[f["id"]] = {
             **dict(f),
             "intent": intent,
-            "decisions": decisions,
-            "evolution": ev,
+            "decisions": decisions_by_fn.get(f["id"], []),
+            "evolution": evolution_by_fn.get(f["id"], []),
             "has_intent": intent is not None,
         }
 

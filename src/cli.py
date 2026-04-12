@@ -1,7 +1,7 @@
 """
 User-facing CLI: MCP installer + terminal helpers.
 
-  own-your-code install [--platform editor-a|editor-b|editor-c|all] [--dry-run]
+  own-your-code install [--platform editor-a|editor-b|editor-c|claude-code|all] [--dry-run]
   own-your-code print-config
   own-your-code status [--project-path PATH]
   own-your-code update [PATH] [--name NAME]   (PATH defaults to current directory)
@@ -57,10 +57,16 @@ def _paths_editor_c() -> list[Path]:
     return [Path.home() / ".codeium" / "windsurf" / "mcp_config.json"]
 
 
+def _paths_claude_code() -> list[Path]:
+    """Host config: Claude Code CLI and VSCode Claude extension (~/.claude.json)."""
+    return [Path.home() / ".claude.json"]
+
+
 PLATFORM_PATHS: dict[str, list[Path]] = {
     "editor-a": _paths_editor_a,
     "editor-b": _paths_editor_b,
     "editor-c": _paths_editor_c,
+    "claude-code": _paths_claude_code,
 }
 
 
@@ -482,7 +488,7 @@ def main(argv: list[str] | None = None) -> int:
         action="append",
         dest="platforms",
         metavar="NAME",
-        help="editor-a | editor-b | editor-c (repeatable). Default: all.",
+        help="editor-a (Cursor) | editor-b (Claude Desktop) | editor-c (Windsurf) | claude-code (Claude Code CLI + VSCode) (repeatable). Default: all.",
     )
     p_install.add_argument(
         "--dry-run",

@@ -5,6 +5,9 @@ description = "MCP server & web UI: intent ledger for your codebase — record w
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
+authors = [
+    { name = "Khirod Sahoo", email = "khirodsahoo93@gmail.com" },
+]
 keywords = [
     "mcp",
     "model-context-protocol",
