@@ -1,4 +1,5 @@
 .venv/
+.venv-*/
 venv/
 __pycache__/
 *.py[cod]
@@ -8,24 +9,39 @@ dist/
 build/
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
+.ruff_cache/
+*.pyo
 
 # Local SQLite (set OWN_YOUR_CODE_DB in production)
 owns.db
 .cli-test.db
+*.db
 *.db-journal
+*.db-shm
+*.db-wal
 
 # Node / UI
 ui/node_modules/
 ui/dist/
+npm/own-your-code-mcp/node_modules/
 
 # IDE / OS
 .idea/
 .vscode/
 .DS_Store
+.DS_Store?
+._*
+Thumbs.db
 .env
 .env.*
+!.env.example
 
 # Local tooling / generated (do not ship in git)
 .cursor/
 .code-review-graph/
+*.log
+pip-wheel-metadata/
+.mypy_cache/
+.hypothesis/

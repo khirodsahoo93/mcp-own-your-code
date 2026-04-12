@@ -203,6 +203,29 @@ def _extract_calls(node) -> list[str]:
     return sorted(calls)
 
 
+def scan_single_file(file_path: str, project_root: str) -> list[dict]:
+    """
+    Extract functions from a single file using the appropriate language extractor.
+    Used by the post-write hook to avoid rescanning the whole project on every save.
+    Returns an empty list (never raises) so the hook stays non-blocking.
+    """
+    from .extractors import get_extractor
+
+    path = Path(file_path).resolve()
+    root = Path(project_root).resolve()
+    ext = path.suffix.lower()
+    extractor = get_extractor(ext)
+
+    if extractor is None:
+        return []
+
+    try:
+        fns, _ = extractor.scan_file(str(path), str(root))
+        return fns
+    except Exception:
+        return []
+
+
 def get_git_hash(path: str) -> str | None:
     import subprocess
     try:
