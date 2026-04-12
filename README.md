@@ -955,7 +955,7 @@ git tag v0.2.0
 git push origin main && git push origin v0.2.0
 ```
 
-CI builds sdist + wheel, uploads to PyPI via OIDC, then publishes the npm shim.
+CI builds sdist + wheel, uploads to PyPI via OIDC, creates a **GitHub Release** (auto-generated notes), then publishes the npm shim.
 
 ### Manual publish (if needed)
 

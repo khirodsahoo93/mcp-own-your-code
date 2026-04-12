@@ -48,6 +48,20 @@ jobs:
         with:
           packages-dir: dist/
 
+  github-release:
+    name: Create GitHub Release
+    needs: pypi
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+
   npm:
     name: Publish npm shim
     # This host rejects `secrets` in `if` (job and step). Skip publish inside the script when unset.
