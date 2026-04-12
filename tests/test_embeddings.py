@@ -22,11 +22,11 @@ def project(tmp_path):
     })
     iid1 = db.record_intent(fid1, {
         "user_request": "Allow users to log in with email and password",
-        "claude_reasoning": "Validates credentials against the database",
+        "reasoning": "Validates credentials against the database",
     })
     iid2 = db.record_intent(fid2, {
         "user_request": "Charge a credit card for the order total",
-        "claude_reasoning": "Calls Stripe API to process payment",
+        "reasoning": "Calls Stripe API to process payment",
     })
     return {"project_id": pid, "path": str(tmp_path), "intent_ids": [iid1, iid2]}
 

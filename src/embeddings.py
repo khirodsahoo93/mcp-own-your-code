@@ -87,8 +87,8 @@ def get_model(model_name: str = DEFAULT_MODEL):
 def _intent_text(row: dict) -> str:
     """Build canonical text for a single intent row."""
     parts = [row.get("user_request") or ""]
-    if row.get("claude_reasoning"):
-        parts.append(row["claude_reasoning"])
+    if row.get("reasoning"):
+        parts.append(row["reasoning"])
     if row.get("implementation_notes"):
         parts.append(row["implementation_notes"])
     return " ".join(p for p in parts if p).strip()
@@ -165,7 +165,7 @@ def semantic_search(project_id: int, query: str, limit: int = 20,
 
     Returns (results, available) where available=False if deps are missing.
     Each result dict has: qualname, file, lineno, signature, user_request,
-    claude_reasoning, score.
+    reasoning, score.
     """
     from . import db
 
@@ -195,7 +195,7 @@ def semantic_search(project_id: int, query: str, limit: int = 20,
             "lineno":          row["lineno"],
             "signature":       row["signature"],
             "user_request":    row["user_request"],
-            "claude_reasoning": row.get("claude_reasoning"),
+            "reasoning": row.get("reasoning"),
             "score":           float(score),
         })
     return results, True

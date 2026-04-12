@@ -67,7 +67,7 @@ def test_prune_stale_functions_deletes_intents_for_removed_function(tmp_path, mo
         if fn["qualname"] == "drop":
             db.record_intent(
                 fid,
-                {"user_request": "test", "claude_reasoning": "r", "confidence": 3},
+                {"user_request": "test", "reasoning": "r", "confidence": 3},
             )
 
     (proj_root / "x.py").write_text("def keep(): pass\n")

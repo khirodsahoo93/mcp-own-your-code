@@ -353,7 +353,7 @@ def _record_intent(args: dict) -> str:
 
     intent_id = db.record_intent(fid, {
         "user_request":         args["user_request"],
-        "claude_reasoning":     reasoning,
+        "reasoning":     reasoning,
         "implementation_notes": args.get("implementation_notes"),
         "confidence":           conf,
     })
@@ -439,7 +439,7 @@ def _explain_function(args: dict) -> str:
         "lineno": fn["lineno"],
         "signature": fn["signature"],
         "exists_because": latest["user_request"],
-        "how_it_works": latest["claude_reasoning"],
+        "how_it_works": latest["reasoning"],
         "implementation_notes": latest["implementation_notes"],
         "confidence": latest["confidence"],
         "decisions": decisions,
@@ -539,7 +539,7 @@ def _find_by_intent(args: dict) -> str:
                 "lineno":         r.get("lineno"),
                 "signature":      r.get("signature"),
                 "exists_because": r.get("user_request"),
-                "how_it_works":   r.get("claude_reasoning"),
+                "how_it_works":   r.get("reasoning"),
                 **({"score": r["score"]} if "score" in r else {}),
             }
             for r in results
@@ -684,7 +684,7 @@ def _annotate_existing(args: dict) -> str:
 
         db.record_intent(fn["id"], {
             "user_request":         ann["user_request"],
-            "claude_reasoning":     ann.get("reasoning"),
+            "reasoning":     ann.get("reasoning"),
             "implementation_notes": ann.get("implementation_notes"),
             "confidence":           ann.get("confidence", 2),
         })

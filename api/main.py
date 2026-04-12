@@ -188,9 +188,6 @@ def explain(project_path: str, function_name: str, file: str = ""):
     intents = db.get_intents(fn["id"])
     decisions = db.get_decisions(fn["id"])
     evolution = db.get_evolution(fn["id"])
-    for row in intents:
-        if row.get("claude_reasoning") is not None:
-            row["agent_reasoning"] = row["claude_reasoning"]
     return {**dict(fn), "intents": intents, "decisions": decisions, "evolution": evolution}
 
 

@@ -64,7 +64,7 @@ DB_PATH = Path(os.environ.get("OWN_YOUR_CODE_DB", str(_DEFAULT_DB))).expanduser(
 _db_initialized = False
 _db_init_lock = threading.Lock()
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 _SCHEMA_V1 = """
 CREATE TABLE IF NOT EXISTS projects (
@@ -99,7 +99,7 @@ CREATE TABLE IF NOT EXISTS intents (
     function_id     INTEGER REFERENCES functions(id),
     recorded_at     TEXT NOT NULL,
     user_request    TEXT NOT NULL,
-    claude_reasoning TEXT,
+    reasoning       TEXT,
     implementation_notes TEXT,
     confidence      INTEGER DEFAULT 3
 );
@@ -159,6 +159,10 @@ CREATE TABLE IF NOT EXISTS intent_embeddings (
 CREATE UNIQUE INDEX IF NOT EXISTS uq_intent_model ON intent_embeddings(intent_id, model);
 """
 
+_MIGRATION_V3 = """
+ALTER TABLE intents RENAME COLUMN claude_reasoning TO reasoning;
+"""
+
 
 def init_db():
     """Create tables and run any pending migrations."""
@@ -179,6 +183,12 @@ def init_db():
         version = raw.execute("PRAGMA user_version").fetchone()[0]
         if version < 2:
             raw.executescript(_MIGRATION_V2)
+        if version < 3:
+            try:
+                raw.executescript(_MIGRATION_V3)
+            except Exception:
+                pass  # column already renamed (new DB created with updated schema)
+        if version < SCHEMA_VERSION:
             raw.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
     finally:
         raw.close()
@@ -407,9 +417,9 @@ def record_intent(function_id: int, data: dict) -> int:
     with conn() as c:
         cur = c.execute("""
             INSERT INTO intents(function_id, recorded_at, user_request,
-                claude_reasoning, implementation_notes, confidence)
+                reasoning, implementation_notes, confidence)
             VALUES(?,?,?,?,?,?)
-        """, (function_id, now(), data["user_request"], data.get("claude_reasoning"),
+        """, (function_id, now(), data["user_request"], data.get("reasoning"),
               data.get("implementation_notes"), data.get("confidence", 3)))
         return cur.lastrowid
 
@@ -727,7 +737,7 @@ def get_embeddings_for_project(project_id: int, model: str) -> list[dict]:
     """Return list of {intent_id, function_id, qualname, file, vector, user_request} for semantic search."""
     with conn() as c:
         rows = c.execute("""
-            SELECT ie.intent_id, ie.vector, i.user_request, i.claude_reasoning,
+            SELECT ie.intent_id, ie.vector, i.user_request, i.reasoning,
                    i.implementation_notes, f.id AS function_id, f.qualname, f.file, f.lineno, f.signature
             FROM intent_embeddings ie
             JOIN intents i ON i.id = ie.intent_id
@@ -759,7 +769,7 @@ def get_unembedded_intents(project_id: int, model: str) -> list[dict]:
     """Return intents that have no embedding for the given model."""
     with conn() as c:
         rows = c.execute("""
-            SELECT i.id AS intent_id, i.user_request, i.claude_reasoning, i.implementation_notes,
+            SELECT i.id AS intent_id, i.user_request, i.reasoning, i.implementation_notes,
                    f.qualname, f.file
             FROM intents i
             JOIN functions f ON f.id = i.function_id
@@ -779,7 +789,7 @@ def search_intents(project_id: int, query: str) -> list[dict]:
     with conn() as c:
         rows = c.execute("""
             SELECT DISTINCT f.id, f.qualname, f.file, f.lineno, f.signature,
-                i.user_request, i.claude_reasoning, i.implementation_notes
+                i.user_request, i.reasoning, i.implementation_notes
             FROM functions f
             LEFT JOIN intents i ON i.function_id = f.id
             WHERE f.project_id=?
@@ -787,7 +797,7 @@ def search_intents(project_id: int, query: str) -> list[dict]:
                 LOWER(f.name) LIKE ? OR
                 LOWER(f.qualname) LIKE ? OR
                 LOWER(COALESCE(i.user_request,'')) LIKE ? OR
-                LOWER(COALESCE(i.claude_reasoning,'')) LIKE ? OR
+                LOWER(COALESCE(i.reasoning,'')) LIKE ? OR
                 LOWER(COALESCE(i.implementation_notes,'')) LIKE ?
               )
             ORDER BY f.file, f.lineno
