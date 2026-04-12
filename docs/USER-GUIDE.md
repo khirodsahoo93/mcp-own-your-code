@@ -48,7 +48,7 @@ flowchart LR
 
 ## 2. What is PyPI? What is pip?
 
-- **PyPI** (Python Package Index) is a **public catalog** of Python libraries. Think “app store for Python code,” but everything is open and versioned (e.g. `own-your-code` version `0.1.4`).
+- **PyPI** (Python Package Index) is a **public catalog** of Python libraries. Think “app store for Python code,” but everything is open and versioned (e.g. `own-your-code` version `0.1.10`).
 - **pip** is the tool that **downloads** a package from PyPI (or another index) and **installs** it into **your** Python environment.
 
 When you run:
