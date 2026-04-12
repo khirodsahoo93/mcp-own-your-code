@@ -64,7 +64,7 @@ jobs:
           "
 
       - name: MCP server smoke
-        run: python3 -c "from src.server import server; print('MCP server ok, name:', server.name)"
+        run: python3 -c "from src.server import mcp; print('MCP server ok, name:', mcp.name)"
 
   ui:
     name: UI build
